@@ -34,6 +34,12 @@ public interface Transfers {
      */
     void blockEnergy(AtBlock<EnergyBuffer> energy, Block... blocks);
 
+    /**
+     * Makes fluid reachable at blocks that have no block entity, such as pipes and tank blocks, which
+     * expose their grid's shared tank (see {@link io.github.theskyfell.outworld.core.fluid.FluidGrids}).
+     */
+    void blockFluids(AtBlock<FluidTank> fluids, Block... blocks);
+
     /** The storage at a block without a block entity, on a side. Only asked on the server. */
     @FunctionalInterface
     interface AtBlock<S> {

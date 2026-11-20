@@ -92,6 +92,14 @@ public final class NeoForgeModules {
         }
 
         @Override
+        public void blockFluids(AtBlock<FluidTank> fluids, Block... blocks) {
+            event.registerBlock(Capabilities.Fluid.BLOCK, (level, pos, state, blockEntity, side) -> {
+                FluidTank tank = level instanceof ServerLevel serverLevel ? fluids.get(serverLevel, pos, side) : null;
+                return tank == null ? null : NeoForgeFluids.handlerFor(tank);
+            }, blocks);
+        }
+
+        @Override
         public <T extends BlockEntity> void items(BlockEntityType<T> type, Sided<T, ItemBuffer> items) {
             event.registerBlockEntity(Capabilities.Item.BLOCK, type, (blockEntity, side) -> {
                 ItemBuffer buffer = items.get(blockEntity, side);

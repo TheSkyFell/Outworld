@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.core.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import io.github.theskyfell.outworld.core.grid.Grids;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
@@ -8,6 +9,8 @@ import io.github.theskyfell.outworld.core.platform.Services;
 import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
+import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -39,6 +42,15 @@ public final class OutworldCommand {
                             context.getSource().sendSuccess(() -> Component.literal(text), false);
                             return 1;
                         }))
+                .then(Commands.literal("grid")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .then(Commands.argument("pos", BlockPosArgument.blockPos()).executes(context -> {
+                            BlockPos pos = BlockPosArgument.getLoadedBlockPos(context, "pos");
+                            String found = Grids.describeAt(context.getSource().getLevel(), pos);
+                            String text = found.isEmpty() ? "No cable, pipe or tank at " + pos.toShortString() : found;
+                            context.getSource().sendSuccess(() -> Component.literal(text), false);
+                            return 1;
+                        })))
                 .then(StressCommand.node()));
     }
 

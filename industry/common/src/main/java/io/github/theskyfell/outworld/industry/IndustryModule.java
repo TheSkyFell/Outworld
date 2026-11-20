@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.industry;
 
 import io.github.theskyfell.outworld.core.energy.EnergyGrids;
+import io.github.theskyfell.outworld.core.fluid.FluidGrids;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
@@ -12,6 +13,7 @@ import io.github.theskyfell.outworld.industry.test.TestMachine;
 import io.github.theskyfell.outworld.industry.test.TestPing;
 import io.github.theskyfell.outworld.industry.test.TestPong;
 import java.util.List;
+import net.minecraft.core.Direction;
 
 /** Outworld Industry, as handed to Core's loader layer. */
 public final class IndustryModule implements OutworldModule {
@@ -50,7 +52,10 @@ public final class IndustryModule implements OutworldModule {
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));
         transfers.energy(IndustryContent.SOLAR_PANEL.get(), (panel, side) -> panel.energy());
         transfers.blockEnergy((level, pos, side) -> EnergyGrids.bufferAt(level, pos), IndustryContent.CABLE_BLOCK.get());
-        transfers.fluids(IndustryContent.TEST_TANK.get(), (tank, side) -> tank.tank());
+        transfers.blockFluids((level, pos, side) -> FluidGrids.tankAt(level, pos),
+                IndustryContent.FLUID_PIPE_BLOCK.get(), IndustryContent.FLUID_TANK_BLOCK.get());
+        // Fluid only enters a test tank from below, so a pipe on top doesn't hand it back what it pushed up.
+        transfers.fluids(IndustryContent.TEST_TANK.get(), (tank, side) -> side == null || side == Direction.DOWN ? tank.tank() : null);
     }
 
     @Override
