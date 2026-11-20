@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -50,6 +51,9 @@ public interface Platform {
     void sendToPlayer(ServerPlayer player, CustomPacketPayload payload);
 
     void sendToPlayersTracking(ServerLevel level, BlockPos pos, CustomPacketPayload payload);
+
+    /** A builder for a creative tab that the loader places on its own page of tabs. */
+    CreativeModeTab.Builder creativeTabBuilder();
 
     <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks);
 

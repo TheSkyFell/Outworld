@@ -19,6 +19,7 @@
   "item.outworld_industry.purified_copper": "Purified Copper",
   "item.outworld_industry.purified_gold": "Purified Gold",
   "item.outworld_industry.purified_iron": "Purified Iron",
+  "itemGroup.outworld_industry": "Outworld Industry",
   "screen.outworld_industry.test_block.idle": "Press Ping to test the connection.",
   "screen.outworld_industry.test_block.ping": "Ping server",
   "screen.outworld_industry.test_block.position": "Block at %s",
