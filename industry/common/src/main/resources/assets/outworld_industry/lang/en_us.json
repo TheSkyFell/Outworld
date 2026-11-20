@@ -1,8 +1,4 @@
 {
-  "block.outworld_industry.crusher": "Crusher",
-  "item.outworld_industry.crushed_iron": "Crushed Iron",
-  "item.outworld_industry.crushed_copper": "Crushed Copper",
-  "item.outworld_industry.crushed_gold": "Crushed Gold",
   "block.outworld_industry.test_block": "Test Block",
   "block.outworld_industry.test_battery": "Test Battery",
   "block.outworld_industry.test_crate": "Test Crate",

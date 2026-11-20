@@ -4,8 +4,6 @@ import io.github.theskyfell.outworld.core.menu.Menus;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
-import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
-import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlock;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestCrateBlock;
@@ -36,28 +34,6 @@ public final class IndustryContent {
     public static final Registrar<Item> ITEMS = Registrar.create(Registries.ITEM, OutworldIndustry.MOD_ID);
     public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = Registrar.create(Registries.BLOCK_ENTITY_TYPE, OutworldIndustry.MOD_ID);
     public static final Registrar<MenuType<?>> MENUS = Registrar.create(Registries.MENU, OutworldIndustry.MOD_ID);
-
-    // Machines
-
-    public static final RegistryEntry<Block, CrusherBlock> CRUSHER_BLOCK = BLOCKS.register("crusher",
-            key -> new CrusherBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
-
-    public static final RegistryEntry<Item, BlockItem> CRUSHER_ITEM = ITEMS.register("crusher",
-            key -> new BlockItem(CRUSHER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
-
-    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<CrusherBlockEntity>> CRUSHER = BLOCK_ENTITIES.register("crusher",
-            key -> BlockEntityTypes.create(CrusherBlockEntity::new, CRUSHER_BLOCK.get()));
-
-    // Materials
-
-    public static final RegistryEntry<Item, Item> CRUSHED_IRON = ITEMS.register("crushed_iron",
-            key -> new Item(new Item.Properties().setId(key)));
-    public static final RegistryEntry<Item, Item> CRUSHED_COPPER = ITEMS.register("crushed_copper",
-            key -> new Item(new Item.Properties().setId(key)));
-    public static final RegistryEntry<Item, Item> CRUSHED_GOLD = ITEMS.register("crushed_gold",
-            key -> new Item(new Item.Properties().setId(key)));
-
-    // Temporary test blocks
 
     /**
      * Temporary: opens a menu that pings the server, which tests registration, menus, screens and

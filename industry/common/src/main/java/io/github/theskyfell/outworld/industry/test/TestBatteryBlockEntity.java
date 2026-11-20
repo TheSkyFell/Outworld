@@ -55,8 +55,5 @@ public final class TestBatteryBlockEntity extends BlockEntity {
         super.loadAdditional(input);
         energy.load(input, "energy");
         creative = input.getBooleanOr("creative", false);
-        if (creative) {
-            energy.setAmount(CAPACITY); // placed with only {creative:1b}, it would otherwise start empty
-        }
     }
 }

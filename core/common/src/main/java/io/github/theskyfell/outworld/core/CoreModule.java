@@ -5,19 +5,14 @@ import io.github.theskyfell.outworld.core.config.ConfigFile;
 import io.github.theskyfell.outworld.core.event.OutworldEvents;
 import io.github.theskyfell.outworld.core.gas.Gas;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
-import io.github.theskyfell.outworld.core.machine.MachineValues;
 import io.github.theskyfell.outworld.core.module.DataRegistries;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
-import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.perf.Perf;
 import io.github.theskyfell.outworld.core.platform.Services;
-import io.github.theskyfell.outworld.core.recipe.MachineRecipe;
-import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.stress.StressTest;
-import java.util.List;
 
 /** Outworld Core itself, loaded through the same loader layer as every feature mod. */
 public final class CoreModule implements OutworldModule {
@@ -27,20 +22,9 @@ public final class CoreModule implements OutworldModule {
     }
 
     @Override
-    public List<Registrar<?>> registrars() {
-        return CoreContent.registrars();
-    }
-
-    @Override
-    public void registerPayloads(Payloads payloads) {
-        payloads.clientbound(MachineValues.TYPE, MachineValues.STREAM_CODEC);
-    }
-
-    @Override
     public void registerDataRegistries(DataRegistries registries) {
         registries.synced(MultiblockStructure.REGISTRY, MultiblockStructure.CODEC);
         registries.synced(Gas.REGISTRY, Gas.CODEC);
-        registries.synced(MachineRecipe.REGISTRY, MachineRecipe.CODEC);
     }
 
     @Override
