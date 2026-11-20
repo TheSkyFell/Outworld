@@ -3,6 +3,8 @@
 # - it reaches "Done", with both mods started and their content registered
 # - Core's server events fire and /outworld answers (asked over RCON)
 # - Core's config file was written
+# - machines sleep and wake: a test machine placed at 0 100 0 sleeps; a neighbour change starts a
+#   100-tick job, which it works through in batches of 4 ticks and then sleeps again
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -21,9 +23,11 @@ timeout_seconds=1800
 mkdir -p "$run_dir"
 echo "eula=true" > "$run_dir/eula.txt"
 # A flat world keeps the first boot quick. RCON lets this script run commands on the server.
+# The server must not pause for having no players, or game time (and the machines) would stop.
 cat > "$run_dir/server.properties" <<EOF
 level-type=minecraft\:flat
 online-mode=false
+pause-when-empty-seconds=-1
 enable-rcon=true
 rcon.port=${rcon_port}
 rcon.password=${rcon_password}
@@ -53,8 +57,31 @@ done
 elapsed=$(( SECONDS - start ))
 
 version_reply=""
+placed_machines=""
+placed_work=""
+job_machines=""
+done_work=""
+done_machines=""
 if [[ "$result" == "done" ]]; then
     version_reply="$(rcon outworld version 2>&1 || true)"
+
+    # Machines: place one, let it settle, then give it a job through a neighbour change.
+    rcon forceload add 0 0 > /dev/null 2>&1 || true
+    rcon setblock 0 100 0 outworld_industry:test_block > /dev/null 2>&1 || true
+    sleep 3
+    placed_machines="$(rcon outworld machines 2>&1 || true)"
+    placed_work="$(rcon data get block 0 100 0 work_done 2>&1 || true)"
+    rcon setblock 1 100 0 minecraft:stone > /dev/null 2>&1 || true
+    sleep 1
+    job_machines="$(rcon outworld machines 2>&1 || true)"
+    for _ in $(seq 1 30); do
+        sleep 1
+        done_work="$(rcon data get block 0 100 0 work_done 2>&1 || true)"
+        [[ "$done_work" == *": 100" ]] && break
+    done
+    sleep 1
+    done_machines="$(rcon outworld machines 2>&1 || true)"
+
     rcon stop > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
         kill -0 "$gradle_pid" 2>/dev/null || break
@@ -87,6 +114,24 @@ else
     fail "/outworld version over RCON (reply: ${version_reply:-none})"
 fi
 
+batches() { [[ "$1" =~ ([0-9]+)\ work\ batches ]] && echo "${BASH_REMATCH[1]}" || echo -1; }
+if [[ "$placed_machines" == *"1 loaded, 0 awake"* && "$placed_work" == *": 0" ]]; then
+    pass "placed machine checked for work, then slept (${placed_machines})"
+else
+    fail "placed machine sleeps (machines: ${placed_machines:-none}; work: ${placed_work:-none})"
+fi
+if [[ "$job_machines" == *"1 loaded, 1 awake"* ]]; then
+    pass "neighbour change woke the machine"
+else
+    fail "neighbour change wakes the machine (machines: ${job_machines:-none})"
+fi
+job_batches=$(( $(batches "$done_machines") - $(batches "$placed_machines") ))
+if [[ "$done_work" == *": 100" && "$done_machines" == *"1 loaded, 0 awake"* ]] && (( job_batches >= 25 && job_batches <= 26 )); then
+    pass "100 ticks of work done in ${job_batches} batches, then asleep"
+else
+    fail "job of 100 ticks in 25-26 batches, then asleep (work: ${done_work:-none}; machines: ${done_machines:-none}; batches for the job: ${job_batches})"
+fi
+
 config="$run_dir/config/outworld/core.json"
 if grep -q '"workIntervalTicks"' "$config" 2>/dev/null; then
     pass "config file written: $config"
@@ -102,6 +147,9 @@ fi
 # Recorded in the log too, so failure reports on pull requests include them.
 {
     echo "Boot checks: ${failures} failed. /outworld version reply: ${version_reply:-none}"
+    echo "Machines after placing: ${placed_machines:-none} | work: ${placed_work:-none}"
+    echo "Machines during the job: ${job_machines:-none}"
+    echo "Machines after the job: ${done_machines:-none} | work: ${done_work:-none}"
 } >> "$log"
 
 echo

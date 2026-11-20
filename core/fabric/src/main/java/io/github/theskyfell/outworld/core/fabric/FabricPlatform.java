@@ -2,12 +2,14 @@ package io.github.theskyfell.outworld.core.fabric;
 
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
+import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
 import java.util.Optional;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -21,6 +23,9 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 public final class FabricPlatform implements Platform {
     @Override
@@ -86,5 +91,10 @@ public final class FabricPlatform implements Platform {
         for (ServerPlayer player : PlayerLookup.tracking(level, pos)) {
             ServerPlayNetworking.send(player, payload);
         }
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks) {
+        return FabricBlockEntityTypeBuilder.<T>create(factory::create, blocks).build();
     }
 }
