@@ -1,8 +1,0 @@
-{
-  "parent": "minecraft:block/orientable",
-  "textures": {
-    "top": "outworld_industry:block/machine_casing_top",
-    "front": "outworld_industry:block/electric_furnace_front",
-    "side": "outworld_industry:block/machine_casing_side"
-  }
-}

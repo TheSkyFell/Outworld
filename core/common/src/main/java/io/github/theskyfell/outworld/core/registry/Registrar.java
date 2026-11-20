@@ -2,7 +2,6 @@ package io.github.theskyfell.outworld.core.registry;
 
 import io.github.theskyfell.outworld.core.OutworldCore;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -53,11 +52,6 @@ public final class Registrar<T> {
 
     public String namespace() {
         return namespace;
-    }
-
-    /** Every entry declared so far, in order. */
-    public List<RegistryEntry<T, ? extends T>> entries() {
-        return Collections.unmodifiableList(entries);
     }
 
     /**

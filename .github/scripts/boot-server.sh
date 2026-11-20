@@ -30,13 +30,6 @@
 #   recipe) feeds three cables at 11..13 100 6, which a crusher at 14 100 6 draws on to turn 2 raw iron
 #   into 4 crushed iron
 # - a solar panel at 10 100 9, set to noon, charges an empty test battery next to it
-# - the electric furnace smelts with vanilla recipes: on a creative battery at 6 100 14, given 2 crushed
-#   iron, it makes 2 iron ingots
-# - the ore washer takes water through the loaders' fluid APIs: over a test tank and a water cauldron
-#   at 8 _ 14, it washes 2 crushed copper into 3 purified copper
-# - the electrolyzer splits water into gases: over a test tank and a water cauldron at 10 _ 14, it
-#   fills the test gas tank on top of it with hydrogen or oxygen. Both machines share a creative
-#   battery at 9 101 14
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -131,10 +124,6 @@ crusher_state=""
 power_output=""
 power_state=""
 solar_battery=""
-furnace_output=""
-washer_output=""
-electrolyzer_gas=""
-processing_state=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -249,28 +238,6 @@ if [[ "$result" == "done" ]]; then
         [[ "$solar_battery" =~ :\ [1-9][0-9]*L?$ ]] && break
     done
 
-    # Processing: an electric furnace, an ore washer and an electrolyzer, each fed and powered.
-    rcon setblock 6 100 14 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
-    rcon setblock 6 101 14 'outworld_industry:electric_furnace{Items:[{Slot:0b,id:"outworld_industry:crushed_iron",count:2}]}' > /dev/null 2>&1 || true
-    rcon setblock 9 101 14 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
-    for x in 8 10; do
-        rcon setblock "$x" 99 14 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
-        rcon setblock "$x" 100 14 outworld_industry:test_tank > /dev/null 2>&1 || true
-    done
-    rcon setblock 8 101 14 'outworld_industry:ore_washer{Items:[{Slot:0b,id:"outworld_industry:crushed_copper",count:2}]}' > /dev/null 2>&1 || true
-    rcon setblock 10 101 14 outworld_industry:electrolyzer > /dev/null 2>&1 || true
-    rcon setblock 10 102 14 outworld_industry:test_gas_tank > /dev/null 2>&1 || true
-    for _ in $(seq 1 30); do
-        sleep 1
-        furnace_output="$(rcon data get block 6 101 14 'Items[{Slot:1b}]' 2>&1 || true)"
-        washer_output="$(rcon data get block 8 101 14 'Items[{Slot:1b}]' 2>&1 || true)"
-        electrolyzer_gas="$(rcon data get block 10 102 14 gas 2>&1 || true)"
-        [[ "$furnace_output" == *"iron_ingot"* && "$furnace_output" == *"count: 2"* \
-            && "$washer_output" == *"purified_copper"* && "$washer_output" == *"count: 3"* \
-            && "$electrolyzer_gas" =~ amount:\ [1-9] ]] && break
-    done
-    processing_state="furnace: $(rcon data get block 6 101 14 2>&1 | cut -c1-300 || true) | washer: $(rcon data get block 8 101 14 2>&1 | cut -c1-400 || true) | electrolyzer: $(rcon data get block 10 101 14 2>&1 | cut -c1-500 || true)"
-
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -301,10 +268,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 13 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 19 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 12 entries in minecraft:block_entity_type for outworld_industry'
-check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
+check_log "Industry blocks registered" 'Registered 10 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 13 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 9 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "Core's machine menu registered" 'Registered 1 entries in minecraft:menu for outworld( |$)'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
@@ -413,21 +379,6 @@ if [[ "$solar_battery" =~ :\ [1-9][0-9]*L?$ ]]; then
 else
     fail "solar panel charges an empty battery at noon (battery: ${solar_battery:-none})"
 fi
-if [[ "$furnace_output" == *"iron_ingot"* && "$furnace_output" == *"count: 2"* ]]; then
-    pass "the electric furnace smelted 2 crushed iron into 2 iron ingots with the vanilla recipe"
-else
-    fail "2 iron ingots in the electric furnace's output slot (slot: ${furnace_output:-none})"
-fi
-if [[ "$washer_output" == *"purified_copper"* && "$washer_output" == *"count: 3"* ]]; then
-    pass "the ore washer took water through the fluid API and washed 2 crushed copper into 3 purified copper"
-else
-    fail "3 purified copper in the ore washer's output slot (slot: ${washer_output:-none})"
-fi
-if [[ "$electrolyzer_gas" =~ amount:\ [1-9] && ( "$electrolyzer_gas" == *"outworld:hydrogen"* || "$electrolyzer_gas" == *"outworld:oxygen"* ) ]]; then
-    pass "the electrolyzer split water into gas, collected above it (${electrolyzer_gas})"
-else
-    fail "hydrogen or oxygen from the electrolyzer in the gas tank above it (tank: ${electrolyzer_gas:-none})"
-fi
 data_errors="$(grep -i -E "couldn't (parse|load)|parsing error|failed to (parse|load)" "$log" | grep -i 'outworld' | cut -c1-300 | head -n 5)"
 if [[ -z "$data_errors" ]]; then
     pass "no Outworld data file failed to load"
@@ -507,8 +458,6 @@ fi
     echo "Crusher: ${crusher_state:-none}"
     echo "Power: crusher output slot ${power_output:-none} | solar battery ${solar_battery:-none}"
     echo "Power blocks: ${power_state:-none}"
-    echo "Processing: furnace slot ${furnace_output:-none} | washer slot ${washer_output:-none} | gas above electrolyzer ${electrolyzer_gas:-none}"
-    echo "Processing blocks: ${processing_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"

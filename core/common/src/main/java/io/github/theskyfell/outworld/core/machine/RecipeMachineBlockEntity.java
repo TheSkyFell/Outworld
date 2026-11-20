@@ -2,17 +2,14 @@ package io.github.theskyfell.outworld.core.machine;
 
 import io.github.theskyfell.outworld.core.energy.Energy;
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
-import io.github.theskyfell.outworld.core.fluid.FluidAccess;
 import io.github.theskyfell.outworld.core.fluid.FluidAmount;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
-import io.github.theskyfell.outworld.core.fluid.FluidTransfer;
 import io.github.theskyfell.outworld.core.fluid.FluidUnits;
 import io.github.theskyfell.outworld.core.gas.Gas;
 import io.github.theskyfell.outworld.core.gas.GasAccess;
 import io.github.theskyfell.outworld.core.gas.GasHolder;
 import io.github.theskyfell.outworld.core.gas.GasStack;
 import io.github.theskyfell.outworld.core.gas.GasTank;
-import io.github.theskyfell.outworld.core.gas.GasTransfer;
 import io.github.theskyfell.outworld.core.gas.Gases;
 import io.github.theskyfell.outworld.core.item.ItemBuffer;
 import io.github.theskyfell.outworld.core.recipe.MachineRecipe;
@@ -28,6 +25,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
@@ -37,9 +35,9 @@ import net.minecraft.world.level.storage.ValueOutput;
 /**
  * A machine that runs {@link MachineRecipe}s: it takes items, fluids and gases from its input slots
  * and tanks, uses energy every tick of work, and puts the results in its output slots and tanks.
- * Hoppers, pipes and inserters fill the inputs and empty the item outputs; the machine itself never
- * pulls items, but it does draw energy from neighbouring energy storage (cables, batteries) when it
- * runs short, and pushes the fluid and gas it makes into neighbouring storage.
+ * Hoppers, pipes and inserters fill the inputs and empty the outputs; the machine itself never pulls
+ * items, but it does draw energy from neighbouring energy storage (cables, batteries) when it runs
+ * short.
  *
  * <p>A {@link Layout#generator() generator} runs its recipes the other way round for energy: a
  * recipe's {@code energy} is made every tick instead of used, and the machine pushes its energy into
@@ -68,8 +66,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
 
     /** How often a machine short of energy, or a generator with nowhere to put it, checks again. */
     private static final int ENERGY_RETRY_TICKS = 20;
-    /** How often a machine holding fluid or gas its neighbours wouldn't take offers it again. */
-    private static final int OUTPUT_RETRY_TICKS = 20;
 
     private final Layout layout;
     private final EnergyBuffer energy;
@@ -184,10 +180,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
     @Override
     protected boolean work(ServerLevel level, int elapsedTicks) {
         boolean busy = runRecipes(level, elapsedTicks);
-        if (pushOutputs(level) && !busy) {
-            // Holding fluid or gas that a neighbour couldn't take yet: offer it again later.
-            retryIn(OUTPUT_RETRY_TICKS);
-        }
         if (layout.generator() && energy.getAmount() > 0) {
             long pushed = Energy.pushToNeighbours(level, worldPosition, energy, energy.getAmount());
             if (!busy && energy.getAmount() > 0) {
@@ -199,48 +191,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             }
         }
         return busy;
-    }
-
-    /**
-     * Pushes the output tanks' fluid and gas into neighbouring storage (pipes, tanks, other machines'
-     * inputs). Items stay in the output slots for hoppers and inserters to take.
-     *
-     * @return true if something is left in an output tank and a neighbour has storage that might take
-     *     it later
-     */
-    private boolean pushOutputs(ServerLevel level) {
-        boolean anyFluid = fluidOutputs.stream().anyMatch(tank -> !tank.getContents().isEmpty());
-        boolean anyGas = gasOutputs.stream().anyMatch(tank -> !tank.getContents().isEmpty());
-        if (!anyFluid && !anyGas) {
-            return false;
-        }
-        boolean waiting = false;
-        for (Direction direction : Direction.values()) {
-            BlockPos neighbour = worldPosition.relative(direction);
-            if (anyFluid) {
-                FluidAccess target = FluidTransfer.find(level, neighbour, direction.getOpposite());
-                if (target != null) {
-                    for (FluidTank tank : fluidOutputs) {
-                        if (!tank.getContents().isEmpty()) {
-                            FluidTransfer.move(tank, target, fluid -> true, tank.getContents().amount());
-                            waiting |= !tank.getContents().isEmpty();
-                        }
-                    }
-                }
-            }
-            if (anyGas) {
-                GasAccess target = GasTransfer.find(level, neighbour, direction.getOpposite());
-                if (target != null) {
-                    for (GasTank tank : gasOutputs) {
-                        if (!tank.getContents().isEmpty()) {
-                            GasTransfer.move(tank, target, gas -> true, tank.getAmount());
-                            waiting |= !tank.getContents().isEmpty();
-                        }
-                    }
-                }
-            }
-        }
-        return waiting;
     }
 
     private boolean runRecipes(ServerLevel level, int elapsedTicks) {
@@ -303,12 +253,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return true;
     }
 
-    /**
-     * The recipe to run for the current contents, or null. By default the first data recipe for this
-     * machine that matches; machines can add recipes from elsewhere (the electric furnace adds vanilla
-     * smelting). Called only when the contents changed and the current recipe no longer matches.
-     */
-    protected MachineRecipe findRecipe(ServerLevel level) {
+    private MachineRecipe findRecipe(Level level) {
         for (MachineRecipe candidate : MachineRecipes.forMachine(level, layout.machine())) {
             if (matches(candidate)) {
                 return candidate;
