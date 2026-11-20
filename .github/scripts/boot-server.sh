@@ -462,7 +462,9 @@ if [[ "$result" == "done" ]]; then
         stress_status="$(rcon outworld stress status 2>&1 || true)"
         [[ "$stress_status" == *"Budget "* ]] && break
     done
-    # Belts stress test: another 55 seconds, 5,004 belts in loops (139 loops of 36).
+    # Belts stress test: another 55 seconds, 5,004 belts in loops (139 loops of 36), once the
+    # machines' area is cleared (a new test won't start until the last one's area is gone).
+    rcon outworld stress clear > /dev/null 2>&1 || true
     belts_stress_start="$(rcon outworld stress start belts 5000 160 100 160 2>&1 || true)"
     for _ in $(seq 1 50); do
         sleep 3
