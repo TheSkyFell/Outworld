@@ -35,7 +35,7 @@
 # - the ore washer takes water through the loaders' fluid APIs: over a test tank and a water cauldron
 #   at 8 _ 14, it washes 2 crushed copper into 3 purified copper
 # - the electrolyzer splits water into gases: over a test tank and a water cauldron at 10 _ 14, it
-#   fills the test gas tank on top of it with hydrogen or oxygen. Both machines share a creative
+#   pushes hydrogen out of its left side (seen from the front) into a test gas tank. Both machines share a creative
 #   battery at 9 101 14
 # - pipes and tanks: water pumped up from a cauldron at 12 _ 12 into two fluid pipes reaches an ore
 #   washer at their end, which washes 2 crushed gold into 3 purified gold; an electrolyzer at 12 101 15
@@ -271,12 +271,12 @@ if [[ "$result" == "done" ]]; then
     done
     rcon setblock 8 101 14 'outworld_industry:ore_washer{Items:[{Slot:0b,id:"outworld_industry:crushed_copper",count:2}]}' > /dev/null 2>&1 || true
     rcon setblock 10 101 14 outworld_industry:electrolyzer > /dev/null 2>&1 || true
-    rcon setblock 10 102 14 outworld_industry:test_gas_tank > /dev/null 2>&1 || true
+    rcon setblock 11 101 14 outworld_industry:test_gas_tank > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
         sleep 1
         furnace_output="$(rcon data get block 6 101 14 'Items[{Slot:1b}]' 2>&1 || true)"
         washer_output="$(rcon data get block 8 101 14 'Items[{Slot:1b}]' 2>&1 || true)"
-        electrolyzer_gas="$(rcon data get block 10 102 14 gas 2>&1 || true)"
+        electrolyzer_gas="$(rcon data get block 11 101 14 gas 2>&1 || true)"
         [[ "$furnace_output" == *"iron_ingot"* && "$furnace_output" == *"count: 2"* \
             && "$washer_output" == *"purified_copper"* && "$washer_output" == *"count: 3"* \
             && "$electrolyzer_gas" =~ amount:\ [1-9] ]] && break
@@ -320,9 +320,9 @@ if [[ "$result" == "done" ]]; then
     for _ in $(seq 1 30); do
         sleep 1
         propellant_grid="$(rcon outworld grid 12 101 0 2>&1 || true)"
-        [[ "$propellant_grid" =~ outworld_industry:liquid_(hydrogen|oxygen)\ [1-9] ]] && break
+        [[ "$propellant_grid" =~ outworld_industry:liquid_hydrogen\ [1-9] ]] && break
     done
-    propellant_state="gas pipe: $(rcon outworld grid 9 101 0 2>&1 || true) | liquefier: $(rcon data get block 10 101 0 2>&1 | cut -c1-400 || true)"
+    propellant_state="gas pipe: $(rcon outworld grid 9 101 0 2>&1 || true) | liquefier: $(rcon data get block 10 101 0 2>&1 | cut -c1-700 || true)"
 
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
@@ -477,10 +477,10 @@ if [[ "$washer_output" == *"purified_copper"* && "$washer_output" == *"count: 3"
 else
     fail "3 purified copper in the ore washer's output slot (slot: ${washer_output:-none})"
 fi
-if [[ "$electrolyzer_gas" =~ amount:\ [1-9] && ( "$electrolyzer_gas" == *"outworld:hydrogen"* || "$electrolyzer_gas" == *"outworld:oxygen"* ) ]]; then
-    pass "the electrolyzer split water into gas, collected above it (${electrolyzer_gas})"
+if [[ "$electrolyzer_gas" =~ amount:\ [1-9] && "$electrolyzer_gas" == *"outworld:hydrogen"* ]]; then
+    pass "the electrolyzer split water and pushed hydrogen out of its left side (${electrolyzer_gas})"
 else
-    fail "hydrogen or oxygen from the electrolyzer in the gas tank above it (tank: ${electrolyzer_gas:-none})"
+    fail "hydrogen from the electrolyzer in the gas tank on its left (tank: ${electrolyzer_gas:-none})"
 fi
 if [[ "$pipe_washer_output" == *"purified_gold"* && "$pipe_washer_output" == *"count: 3"* ]]; then
     pass "water pumped into fluid pipes reached the ore washer at their end (3 purified gold)"
@@ -497,10 +497,10 @@ if [[ "$cable_battery" =~ :\ [1-9][0-9]*L?$ ]]; then
 else
     fail "an empty battery under the cable charges from the grid (battery: ${cable_battery:-none})"
 fi
-if [[ "$propellant_grid" =~ outworld_industry:liquid_(hydrogen|oxygen)\ [1-9] ]]; then
+if [[ "$propellant_grid" =~ outworld_industry:liquid_hydrogen\ [1-9] ]]; then
     pass "water became liquid propellant: electrolyzer > gas pipe > gas liquefier > fluid pipe > tank (${propellant_grid})"
 else
-    fail "liquid hydrogen or oxygen in the fluid tank after the liquefier (tank: ${propellant_grid:-none})"
+    fail "liquid hydrogen in the fluid tank after the liquefier (tank: ${propellant_grid:-none})"
 fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
