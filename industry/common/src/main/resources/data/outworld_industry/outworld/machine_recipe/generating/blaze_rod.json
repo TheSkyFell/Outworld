@@ -1,0 +1,12 @@
+{
+  "machine": "outworld_industry:combustion_generator",
+  "items": [
+    {
+      "item": [
+        "minecraft:blaze_rod"
+      ]
+    }
+  ],
+  "time": 1200,
+  "energy": 40
+}

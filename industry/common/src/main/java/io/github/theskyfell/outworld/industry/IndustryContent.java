@@ -6,6 +6,11 @@ import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
+import io.github.theskyfell.outworld.industry.power.CableBlock;
+import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
+import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
+import io.github.theskyfell.outworld.industry.power.SolarPanelBlock;
+import io.github.theskyfell.outworld.industry.power.SolarPanelBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlock;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestCrateBlock;
@@ -47,6 +52,33 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<CrusherBlockEntity>> CRUSHER = BLOCK_ENTITIES.register("crusher",
             key -> BlockEntityTypes.create(CrusherBlockEntity::new, CRUSHER_BLOCK.get()));
+
+    // Power
+
+    public static final RegistryEntry<Block, CombustionGeneratorBlock> COMBUSTION_GENERATOR_BLOCK = BLOCKS.register("combustion_generator",
+            key -> new CombustionGeneratorBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> COMBUSTION_GENERATOR_ITEM = ITEMS.register("combustion_generator",
+            key -> new BlockItem(COMBUSTION_GENERATOR_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<CombustionGeneratorBlockEntity>> COMBUSTION_GENERATOR =
+            BLOCK_ENTITIES.register("combustion_generator",
+                    key -> BlockEntityTypes.create(CombustionGeneratorBlockEntity::new, COMBUSTION_GENERATOR_BLOCK.get()));
+
+    public static final RegistryEntry<Block, SolarPanelBlock> SOLAR_PANEL_BLOCK = BLOCKS.register("solar_panel",
+            key -> new SolarPanelBlock(BlockBehaviour.Properties.of().setId(key).strength(2.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> SOLAR_PANEL_ITEM = ITEMS.register("solar_panel",
+            key -> new BlockItem(SOLAR_PANEL_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL = BLOCK_ENTITIES.register("solar_panel",
+            key -> BlockEntityTypes.create(SolarPanelBlockEntity::new, SOLAR_PANEL_BLOCK.get()));
+
+    public static final RegistryEntry<Block, CableBlock> CABLE_BLOCK = BLOCKS.register("cable",
+            key -> new CableBlock(BlockBehaviour.Properties.of().setId(key).strength(0.5F).sound(SoundType.WOOL).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> CABLE_ITEM = ITEMS.register("cable",
+            key -> new BlockItem(CABLE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
     // Materials
 

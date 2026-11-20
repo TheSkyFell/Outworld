@@ -36,6 +36,8 @@ public abstract class MachineBlockEntity extends BlockEntity {
     private long scheduledTime = ASLEEP;
     private long lastWorkTime;
     private boolean working;
+    private int retryTicks;
+    private boolean waiting;
     private PerfSection perfSection;
 
     protected MachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
@@ -69,16 +71,36 @@ public abstract class MachineBlockEntity extends BlockEntity {
             server.execute(this::wake);
             return;
         }
-        if (scheduledTime != ASLEEP) {
-            return;
-        }
         long now = serverLevel.getGameTime();
-        lastWorkTime = now;
-        MachineScheduler.of(serverLevel).schedule(this, nextSlot(now));
+        long slot = nextSlot(now);
+        if (scheduledTime != ASLEEP && scheduledTime <= slot) {
+            return; // already due by then
+        }
+        if (scheduledTime == ASLEEP) {
+            lastWorkTime = now; // time asleep isn't work time
+        }
+        // Moves a later retry (see retryIn) up to the next slot; the old queue entry goes stale.
+        waiting = false;
+        MachineScheduler.of(serverLevel).schedule(this, slot);
     }
 
+    /**
+     * Call from {@link #work} before returning false, when the machine is waiting for something that
+     * doesn't wake it (energy draining out of a cable, the sun coming up): it sleeps, but works again
+     * after about {@code ticks} ticks even if nothing wakes it sooner.
+     */
+    protected final void retryIn(int ticks) {
+        retryTicks = Math.max(1, ticks);
+    }
+
+    /** True if the machine works at its next slot. */
     public final boolean isAwake() {
-        return scheduledTime != ASLEEP;
+        return scheduledTime != ASLEEP && !waiting;
+    }
+
+    /** True if the machine is asleep but will check again after a while (see {@link #retryIn}). */
+    public final boolean isWaiting() {
+        return scheduledTime != ASLEEP && waiting;
     }
 
     @Override
@@ -122,6 +144,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
         int elapsed = (int) Math.clamp(now - lastWorkTime, 1, MAX_ELAPSED_TICKS);
         lastWorkTime = now;
         boolean stayAwake;
+        retryTicks = 0;
         working = true;
         try {
             stayAwake = work(serverLevel, elapsed);
@@ -129,8 +152,13 @@ public abstract class MachineBlockEntity extends BlockEntity {
             working = false;
         }
         scheduler.countBatch();
-        if (stayAwake && scheduledTime == ASLEEP && !isRemoved()) {
-            scheduler.schedule(this, nextSlot(now));
+        if (scheduledTime == ASLEEP && !isRemoved()) {
+            waiting = !stayAwake && retryTicks > 0;
+            if (stayAwake) {
+                scheduler.schedule(this, nextSlot(now));
+            } else if (waiting) {
+                scheduler.schedule(this, nextSlot(now + retryTicks - 1));
+            }
         }
     }
 

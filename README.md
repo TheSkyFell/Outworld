@@ -15,7 +15,7 @@ needs only Outworld Core, so you can install just the parts you want.
 | Mod | Id | Status |
 |---|---|---|
 | Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, energy, items and fluids that work with other mods' cables, pipes and machines, multiblocks defined in data files, performance measurement, `/outworld version`, `/outworld machines` and `/outworld perf` |
-| Outworld Industry | `outworld_industry` | Started: the crusher (raw ore into two crushed ore, which smelts into ingots), and temporary test blocks: a test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job that costs 10 FE per tick), a test battery (10,000 FE), a test crate (three slots; moves items downwards), a test tank (four buckets; moves fluid upwards) and a test multiblock controller (forms a 3x3x3 iron frame with an air core; right-click shows what's missing and marks where blocks go; right-click with iron blocks to place them) |
+| Outworld Industry | `outworld_industry` | Started: the crusher (raw ore into two crushed ore, which smelts into ingots), the combustion generator (burns coal, charcoal, coal blocks, blaze rods or lava for 40 FE per tick), the solar panel (up to 16 FE per tick under open sky, less as the sun sets, nothing at night), cables (carry energy between generators, machines and other mods' storage), and temporary test blocks: a test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job that costs 10 FE per tick), a test battery (10,000 FE), a test crate (three slots; moves items downwards), a test tank (four buckets; moves fluid upwards) and a test multiblock controller (forms a 3x3x3 iron frame with an air core; right-click shows what's missing and marks where blocks go; right-click with iron blocks to place them) |
 | Outworld Habitats | | Planned |
 | Outworld Logistics | | Planned |
 | Outworld Worlds | | Planned |
@@ -52,7 +52,7 @@ The `core-*` projects have the same run tasks and load Core on its own.
 | Command | Shows |
 |---|---|
 | `/outworld version` | The Outworld mods loaded, and their versions |
-| `/outworld machines` | Machines loaded and awake in each dimension, and how many multiblock positions are watched (needs the same permission as `/gamemode`) |
+| `/outworld machines` | Machines loaded, awake and waiting (asleep, checking again in a moment) in each dimension, and how many multiblock positions are watched (needs the same permission as `/gamemode`) |
 | `/outworld perf` | What Outworld costs the server over the last 100 ticks: the average and worst server tick, Outworld's share of it, and each system's time, with machines broken down by type (same permission) |
 
 | `/outworld stress list \| start <scenario> [count] [x y z] \| status \| stop \| clear` | Builds a stress scenario and measures Outworld's cost under load and idle (needs the same permission as `/ban`; see below) |
@@ -117,7 +117,9 @@ Core gives common code:
 | Multiblocks | `MultiblockControllerBlockEntity` (`core.multiblock`): a machine that works only while its structure is complete. Structures are data files in `data/<namespace>/outworld/multiblock/` (see `MultiblockStructure` for the format), loaded when a world loads; a structure is re-checked only when one of its blocks changes. Controller blocks extend `MultiblockControllerBlock`: right-clicking one while holding a block the structure needs places it in the nearest empty spot; sneak-right-clicking (or right-clicking, unless it opens a screen) traces each missing block's spot in sparks (wrong blocks in orange) and says what's missing |
 | Measuring cost | `Perf.section` (`core.perf`): time a system's work with `try (var _ = SECTION.start())`. Machines are timed automatically, per block entity type |
 | Block entity types | `BlockEntityTypes` (`core.registry`) |
-| Energy (FE) | `EnergyBuffer` (`core.energy`), exposed to other mods with `registerTransfers` in the module; `Energy.find` reaches any mod's energy storage |
+| Energy (FE) | `EnergyBuffer` (`core.energy`), exposed to other mods with `registerTransfers` in the module; `Energy.find` reaches any mod's energy storage, and `Energy.pushToNeighbours` / `pullFromNeighbours` move it to or from the six blocks around |
+| Cables | Blocks implementing `EnergyConductor` (`core.energy`) join every touching conductor into one grid with a single shared buffer, which `EnergyGrids.bufferAt` exposes at each cable (register it with `blockEnergy`). Grids are worked out again only when a conductor is placed or broken or a chunk loads or unloads, so energy on a cable costs nothing per tick. A grid's energy isn't saved yet |
+| Waiting on something that doesn't wake a machine | `retryIn(ticks)` in `MachineBlockEntity.work`: the machine sleeps but checks again after that many ticks (for example a machine short of energy, or a solar panel waiting for the sun) |
 | Items | `ItemBuffer` (`core.item`): slots with input, output or storage roles, exposed with `registerTransfers`; `ItemTransfer.find` and `ItemTransfer.move` reach any mod's or vanilla's item storage |
 | Fluids | `FluidTank` (`core.fluid`), in droplets (`FluidUnits`), exposed with `registerTransfers`; `FluidTransfer.find` and `FluidTransfer.move` reach any mod's fluid storage and vanilla cauldrons |
 

@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "GGG",
+    "QRQ",
+    "III"
+  ],
+  "key": {
+    "G": "minecraft:glass",
+    "Q": "minecraft:quartz",
+    "R": "minecraft:redstone",
+    "I": "minecraft:iron_ingot"
+  },
+  "result": {
+    "id": "outworld_industry:solar_panel",
+    "count": 1
+  }
+}

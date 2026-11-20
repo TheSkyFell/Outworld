@@ -14,7 +14,9 @@ import java.util.List;
 import net.minecraft.core.Registry;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
@@ -79,6 +81,14 @@ public final class NeoForgeModules {
                 EnergyBuffer buffer = energy.get(blockEntity, side);
                 return buffer == null ? null : NeoForgeEnergy.handlerFor(buffer);
             });
+        }
+
+        @Override
+        public void blockEnergy(AtBlock<EnergyBuffer> energy, Block... blocks) {
+            event.registerBlock(Capabilities.Energy.BLOCK, (level, pos, state, blockEntity, side) -> {
+                EnergyBuffer buffer = level instanceof ServerLevel serverLevel ? energy.get(serverLevel, pos, side) : null;
+                return buffer == null ? null : NeoForgeEnergy.handlerFor(buffer);
+            }, blocks);
         }
 
         @Override
