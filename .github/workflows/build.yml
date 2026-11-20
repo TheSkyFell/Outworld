@@ -2,7 +2,8 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    # Milestone branches are checked as soon as they're pushed, before a pull request exists.
+    branches: [main, 'm*/**']
   pull_request:
   workflow_dispatch:
 
@@ -49,8 +50,8 @@ jobs:
             !**/*-sources.jar
           if-no-files-found: error
 
-      - name: Post the failure on the pull request
-        if: failure() && github.event_name == 'pull_request'
+      - name: Report the failure
+        if: failure()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -90,8 +91,8 @@ jobs:
           path: industry/${{ matrix.loader }}/runs/server/outworld-stress/*.json
           if-no-files-found: ignore
 
-      - name: Post the failure on the pull request
-        if: failure() && github.event_name == 'pull_request'
+      - name: Report the failure
+        if: failure()
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
