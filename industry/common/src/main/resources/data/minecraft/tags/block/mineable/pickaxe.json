@@ -1,5 +1,8 @@
 {
   "values": [
+    "outworld_industry:electrolyzer",
+    "outworld_industry:ore_washer",
+    "outworld_industry:electric_furnace",
     "outworld_industry:combustion_generator",
     "outworld_industry:solar_panel",
     "outworld_industry:crusher",
