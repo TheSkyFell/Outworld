@@ -24,6 +24,8 @@
 #   27 positions are watched for changes
 # - gas moves through Core's gas storage: a test gas tank holding 4 buckets of hydrogen at 0 100 10,
 #   with a second one on top, ends with all 4,000 mB in the top tank
+# - the crusher runs recipes from data: on a creative battery at 8 100 2, a crusher given 3 raw iron
+#   turns it into 6 crushed iron; no Outworld data file fails to load
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -113,6 +115,8 @@ mb_turned=""
 mb_turned_back=""
 mb_machines=""
 gas_top=""
+crusher_output=""
+crusher_state=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -196,6 +200,16 @@ if [[ "$result" == "done" ]]; then
     gas_top="$(wait_for ': 4000L' data get block 0 101 10 gas.amount)"
     gas_bottom="$(rcon data get block 0 100 10 gas.amount 2>&1 || true)"
 
+    # Crusher: three raw iron, 100 ticks each, powered from a creative battery underneath.
+    rcon setblock 8 100 2 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 8 101 2 'outworld_industry:crusher{Items:[{Slot:0b,id:"minecraft:raw_iron",count:3}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 40); do
+        sleep 1
+        crusher_output="$(rcon data get block 8 101 2 'Items[{Slot:1b}]' 2>&1 || true)"
+        [[ "$crusher_output" == *"crushed_iron"* && "$crusher_output" == *"count: 6"* ]] && break
+    done
+    crusher_state="$(rcon data get block 8 101 2 2>&1 | cut -c1-600 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -215,8 +229,9 @@ sleep 2
 kill -KILL -- "-$gradle_pid" 2>/dev/null || true
 
 failures=0
+failed_checks=()
 pass() { echo "  ok:      $1"; }
-fail() { echo "  MISSING: $1"; failures=$((failures + 1)); }
+fail() { echo "  MISSING: $1"; failures=$((failures + 1)); failed_checks+=("$1"); }
 check_log() {
     if grep -q -E "$2" "$log"; then pass "$1"; else fail "$1"; fi
 }
@@ -225,10 +240,11 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 6 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 6 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 6 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 7 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 10 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 7 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
+check_log "Core's machine menu registered" 'Registered 1 entries in minecraft:menu for outworld( |$)'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
 if [[ "$version_reply" == *"outworld_industry"* ]]; then
@@ -320,6 +336,18 @@ else
     fail "4,000 mB of hydrogen in the top gas tank, none in the bottom one (top: ${gas_top:-none}; bottom: ${gas_bottom:-none})"
 fi
 
+if [[ "$crusher_output" == *"crushed_iron"* && "$crusher_output" == *"count: 6"* ]]; then
+    pass "the crusher turned 3 raw iron into 6 crushed iron, from its data recipe"
+else
+    fail "6 crushed iron in the crusher's first output slot (slot: ${crusher_output:-none})"
+fi
+data_errors="$(grep -i -E "couldn't (parse|load)|parsing error|failed to (parse|load)" "$log" | grep -i 'outworld' | cut -c1-300 | head -n 5)"
+if [[ -z "$data_errors" ]]; then
+    pass "no Outworld data file failed to load"
+else
+    fail "Outworld data files that failed to load: ${data_errors}"
+fi
+
 stress_report="$run_dir/outworld-stress/machines.json"
 stress_check="$(python3 - "$stress_report" <<'PY' 2>&1
 import json, os, sys
@@ -373,7 +401,11 @@ fi
 
 # Recorded in the log too, so failure reports on pull requests include them.
 {
-    echo "Boot checks: ${failures} failed. /outworld version reply: ${version_reply:-none}"
+    echo "Boot checks: ${failures} failed."
+    for check in "${failed_checks[@]}"; do
+        echo "  MISSING: ${check}"
+    done
+    echo "/outworld version reply: ${version_reply:-none}"
     echo "Machines after placing: ${placed_machines:-none} | work: ${placed_work:-none}"
     echo "Machines with a job but no energy: ${starved_machines:-none} | work: ${starved_work:-none}"
     echo "Machines after the battery was placed: ${job_machines:-none}"
@@ -384,6 +416,8 @@ fi
     echo "Multiblock: formed ${mb_formed:-none} | shell block removed ${mb_broken:-none} | replaced ${mb_restored:-none} | core filled ${mb_blocked:-none} | cleared ${mb_cleared:-none} | ${mb_times:-none}"
     echo "Multiblock turned north: ${mb_turned:-none} | back east: ${mb_turned_back:-none} | ${mb_machines:-none}"
     echo "Gas: top tank ${gas_top:-none} | bottom tank ${gas_bottom:-none}"
+    echo "Crusher output slot: ${crusher_output:-none}"
+    echo "Crusher: ${crusher_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"
