@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "outworld_industry:block/crusher" },
+    "facing=east": { "model": "outworld_industry:block/crusher", "y": 90 },
+    "facing=south": { "model": "outworld_industry:block/crusher", "y": 180 },
+    "facing=west": { "model": "outworld_industry:block/crusher", "y": 270 }
+  }
+}
