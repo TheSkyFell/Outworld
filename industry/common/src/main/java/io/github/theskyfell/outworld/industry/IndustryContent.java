@@ -2,6 +2,7 @@ package io.github.theskyfell.outworld.industry;
 
 import io.github.theskyfell.outworld.core.menu.Menus;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
+import io.github.theskyfell.outworld.core.registry.CreativeTabs;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
@@ -35,7 +36,9 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
+import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -47,6 +50,7 @@ public final class IndustryContent {
     public static final Registrar<Item> ITEMS = Registrar.create(Registries.ITEM, OutworldIndustry.MOD_ID);
     public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = Registrar.create(Registries.BLOCK_ENTITY_TYPE, OutworldIndustry.MOD_ID);
     public static final Registrar<MenuType<?>> MENUS = Registrar.create(Registries.MENU, OutworldIndustry.MOD_ID);
+    public static final Registrar<CreativeModeTab> TABS = Registrar.create(Registries.CREATIVE_MODE_TAB, OutworldIndustry.MOD_ID);
 
     // Machines
 
@@ -196,11 +200,15 @@ public final class IndustryContent {
     public static final RegistryEntry<MenuType<?>, MenuType<TestMachineMenu>> TEST_MACHINE_MENU = MENUS.register("test_machine",
             key -> Menus.createType(TestMachineMenu::new, BlockPos.STREAM_CODEC));
 
+    /** Every Industry item, test blocks last. */
+    public static final RegistryEntry<CreativeModeTab, CreativeModeTab> TAB = TABS.register("industry",
+            key -> CreativeTabs.listing(ITEMS, () -> new ItemStack(CRUSHER_ITEM.get())));
+
     private IndustryContent() {
     }
 
     /** Blocks come first: block items and block entity types look up their blocks when they are created. */
     static List<Registrar<?>> registrars() {
-        return List.of(BLOCKS, ITEMS, BLOCK_ENTITIES, MENUS);
+        return List.of(BLOCKS, ITEMS, BLOCK_ENTITIES, MENUS, TABS);
     }
 }
