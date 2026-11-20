@@ -64,7 +64,7 @@
 #   13 136 1 set to the torch recipe takes sticks and coal from a hopper above it, but not the dirt in
 #   the same hopper, and makes 8 torches
 # - the M1 gate, ore to rocket fuel running on its own: a small factory at y 140-142 is built in one go
-#   and then left alone. Six combustion generators burning coal power it through a floor of cables.
+#   and then left alone. Six combustion generators burning a coal each power it through a floor of cables.
 #   Inserters and belts carry 2 raw iron from a chest through a crusher, an ore washer (water piped from
 #   a cauldron) and an electric furnace, all three with speed and efficiency upgrades, to an assembler
 #   making buckets, and the buckets into a chest at 15 141 1. Beside it, water from a cauldron goes into
@@ -512,8 +512,10 @@ if [[ "$result" == "done" ]]; then
     # The M1 gate: ore to rocket fuel, built in one go and then left alone.
     upgraded='upgrades:[{slot:0,item:{id:"outworld_industry:speed_upgrade",count:8}},{slot:1,item:{id:"outworld_industry:efficiency_upgrade",count:8}}]'
     rcon fill 0 140 0 15 140 12 outworld_industry:cable > /dev/null 2>&1 || true
-    # Power: six generators with four coal each, and two batteries to hold what they make.
-    rcon fill 0 141 12 5 141 12 'outworld_industry:combustion_generator{Items:[{Slot:0b,id:"minecraft:coal",count:4}]}' > /dev/null 2>&1 || true
+    # Power: six generators with a coal each (192,000 FE; the factory uses about 40,000), and two
+    # batteries to hold what they make. They burn out within a minute, so the stress tests that follow
+    # find the factory asleep.
+    rcon fill 0 141 12 5 141 12 'outworld_industry:combustion_generator{Items:[{Slot:0b,id:"minecraft:coal",count:1}]}' > /dev/null 2>&1 || true
     rcon fill 6 141 12 7 141 12 outworld_industry:battery > /dev/null 2>&1 || true
     # Ore line along z 1, flowing east.
     rcon setblock 9 139 0 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
