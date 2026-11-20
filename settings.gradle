@@ -1,0 +1,38 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        exclusiveContent {
+            forRepository {
+                maven {
+                    name = 'Fabric'
+                    url = uri('https://maven.fabricmc.net')
+                }
+            }
+            filter {
+                includeGroupAndSubgroups('net.fabricmc')
+            }
+        }
+    }
+}
+
+plugins {
+    // Downloads the JDK named in gradle.properties (java_version) when it isn't installed.
+    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+}
+
+rootProject.name = 'Outworld'
+includeBuild('build-logic')
+
+// Every Outworld mod is a module with three projects: shared code in "common", plus one thin project
+// per loader that adds the entry point and loader glue. Project names are unique ("core-common",
+// "core-fabric", ...) so Gradle never mistakes one module's project for another's.
+def modules = ['core', 'industry']
+def sides = ['common', 'fabric', 'neoforge']
+
+modules.each { module ->
+    sides.each { side ->
+        include("${module}-${side}")
+        project(":${module}-${side}").projectDir = file("${module}/${side}")
+    }
+}

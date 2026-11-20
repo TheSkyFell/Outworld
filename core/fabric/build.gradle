@@ -1,0 +1,33 @@
+plugins {
+    id 'outworld-loader'
+    id 'net.fabricmc.fabric-loom'
+}
+
+dependencies {
+    minecraft("com.mojang:minecraft:${minecraft_version}")
+    implementation("net.fabricmc:fabric-loader:${fabric_loader_version}")
+    implementation("net.fabricmc.fabric-api:fabric-api:${fabric_version}")
+}
+
+loom {
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+    // These runs load Core on its own, which checks that it works without any feature mod.
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client (Core only)')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+        server {
+            server()
+            setConfigName('Fabric Server (Core only)')
+            ideConfigGenerated(true)
+            runDir('runs/server')
+        }
+    }
+}

@@ -1,0 +1,78 @@
+// Settings shared by every Outworld project: Java version, jar naming and mod metadata.
+plugins {
+    id 'java-library'
+}
+
+// Project names are "<module>-<side>", e.g. "core-fabric" or "industry-common". The module picks its
+// entries in gradle.properties (core_mod_id, industry_mod_id, ...).
+def separator = project.name.lastIndexOf('-')
+def moduleName = project.name.substring(0, separator)
+def sideName = project.name.substring(separator + 1)
+def moduleProperty = { String key -> providers.gradleProperty("${moduleName}_${key}").get() }
+
+ext {
+    outworld_module = moduleName
+    outworld_side = sideName
+    mod_id = moduleProperty('mod_id')
+    mod_name = moduleProperty('mod_name')
+    mod_description = moduleProperty('description')
+}
+
+base {
+    archivesName = "${mod_id}-${sideName}-${minecraft_version}"
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(java_version)
+    withSourcesJar()
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { "${it}_${mod_id}" }
+    }
+}
+
+jar {
+    manifest {
+        attributes([
+                'Specification-Title'   : mod_name,
+                'Specification-Vendor'  : mod_author,
+                'Specification-Version' : project.version,
+                'Implementation-Title'  : project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor' : mod_author,
+                'Built-On-Minecraft'    : minecraft_version
+        ])
+    }
+}
+
+// Fills ${...} placeholders in the loader metadata files.
+processResources {
+    def expandProps = [
+            'version'                      : project.version.toString(),
+            'minecraft_version'            : minecraft_version,
+            'minecraft_version_range'      : minecraft_version_range,
+            'fabric_loader_version'        : fabric_loader_version,
+            'neoforge_version'             : neoforge_version,
+            'neoforge_loader_version_range': neoforge_loader_version_range,
+            'java_version'                 : java_version,
+            'mod_id'                       : mod_id,
+            'mod_name'                     : mod_name,
+            'mod_author'                   : mod_author,
+            'mod_description'              : mod_description,
+            'license'                      : license,
+            'homepage'                     : homepage,
+            'core_mod_id'                  : core_mod_id
+    ]
+
+    filesMatching(['META-INF/neoforge.mods.toml', 'fabric.mod.json']) {
+        expand expandProps
+    }
+
+    inputs.properties(expandProps)
+}

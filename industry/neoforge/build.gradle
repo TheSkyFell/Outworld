@@ -1,0 +1,30 @@
+plugins {
+    id 'outworld-loader'
+    id 'net.neoforged.moddev'
+}
+
+dependencies {
+    // Feature mods need only Core. Its jar is on the runtime classpath, so dev runs load it as a mod.
+    implementation(project(':core-neoforge'))
+}
+
+neoForge {
+    version = neoforge_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = this.mkdir(this.file('runs/client'))
+        }
+        server {
+            server()
+            gameDirectory = this.mkdir(this.file('runs/server'))
+        }
+    }
+
+    mods {
+        "${mod_id}" {
+            sourceSet sourceSets.main
+        }
+    }
+}

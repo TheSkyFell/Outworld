@@ -1,0 +1,56 @@
+// A module's loader project ("fabric" or "neoforge"): the entry point and loader glue. It compiles its
+// module's common sources and resources itself, so every loader jar is a complete mod.
+plugins {
+    id 'outworld-base'
+}
+
+def commonProject = ":${outworld_module}-common"
+def loaderName = outworld_side
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+
+configurations {
+    commonJava {
+        canBeResolved = true
+    }
+    commonResources {
+        canBeResolved = true
+    }
+}
+
+dependencies {
+    compileOnly(project(commonProject)) {
+        attributes {
+            attribute(loaderAttribute, 'common')
+        }
+    }
+    commonJava(project(path: commonProject, configuration: 'commonJava'))
+    commonResources(project(path: commonProject, configuration: 'commonResources'))
+}
+
+tasks.named('compileJava', JavaCompile) {
+    dependsOn(configurations.commonJava)
+    source(configurations.commonJava)
+}
+
+processResources {
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+tasks.named('sourcesJar', Jar) {
+    dependsOn(configurations.commonJava)
+    from(configurations.commonJava)
+    dependsOn(configurations.commonResources)
+    from(configurations.commonResources)
+}
+
+// Mark this project's variants with its loader (the mcgradleconventions loader attribute). The list
+// includes Loom's and ModDevGradle's own configurations; names that don't exist are simply skipped.
+def markedConfigurations = ['apiElements', 'runtimeElements', 'sourcesElements',
+                            'compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath',
+                            'includeInternal', 'modCompileClasspath', 'jarJar', 'testJarJar']
+configurations.matching { it.name in markedConfigurations }.configureEach {
+    attributes {
+        attribute(loaderAttribute, loaderName)
+    }
+}
