@@ -21,11 +21,15 @@ import io.github.theskyfell.outworld.industry.pipe.FluidTankBlock;
 import io.github.theskyfell.outworld.industry.pipe.GasPipeBlock;
 import io.github.theskyfell.outworld.industry.pipe.GasTankBlock;
 import io.github.theskyfell.outworld.industry.power.BatteryBlock;
+import io.github.theskyfell.outworld.industry.power.BoilerBlock;
+import io.github.theskyfell.outworld.industry.power.BoilerBlockEntity;
 import io.github.theskyfell.outworld.industry.power.CableBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
 import io.github.theskyfell.outworld.industry.power.SolarPanelBlock;
 import io.github.theskyfell.outworld.industry.power.SolarPanelBlockEntity;
+import io.github.theskyfell.outworld.industry.power.SteamTurbineBlock;
+import io.github.theskyfell.outworld.industry.power.SteamTurbineBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlock;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestCrateBlock;
@@ -111,6 +115,24 @@ public final class IndustryContent {
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<CombustionGeneratorBlockEntity>> COMBUSTION_GENERATOR =
             BLOCK_ENTITIES.register("combustion_generator",
                     key -> BlockEntityTypes.create(CombustionGeneratorBlockEntity::new, COMBUSTION_GENERATOR_BLOCK.get()));
+
+    public static final RegistryEntry<Block, BoilerBlock> BOILER_BLOCK = BLOCKS.register("boiler",
+            key -> new BoilerBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> BOILER_ITEM = ITEMS.register("boiler",
+            key -> new BlockItem(BOILER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<BoilerBlockEntity>> BOILER = BLOCK_ENTITIES.register("boiler",
+            key -> BlockEntityTypes.create(BoilerBlockEntity::new, BOILER_BLOCK.get()));
+
+    public static final RegistryEntry<Block, SteamTurbineBlock> STEAM_TURBINE_BLOCK = BLOCKS.register("steam_turbine",
+            key -> new SteamTurbineBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> STEAM_TURBINE_ITEM = ITEMS.register("steam_turbine",
+            key -> new BlockItem(STEAM_TURBINE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<SteamTurbineBlockEntity>> STEAM_TURBINE = BLOCK_ENTITIES.register("steam_turbine",
+            key -> BlockEntityTypes.create(SteamTurbineBlockEntity::new, STEAM_TURBINE_BLOCK.get()));
 
     public static final RegistryEntry<Block, SolarPanelBlock> SOLAR_PANEL_BLOCK = BLOCKS.register("solar_panel",
             key -> new SolarPanelBlock(BlockBehaviour.Properties.of().setId(key).strength(2.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
