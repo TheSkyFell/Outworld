@@ -47,6 +47,7 @@ public class ItemBuffer implements WorldlyContainer, ItemAccess {
     private final Role[] roles;
     private final int[] allSlots;
     private Predicate<ItemStack> inputFilter = stack -> true;
+    private SlotFilter slotFilter = (slot, stack) -> true;
     private Runnable onChange = () -> { };
 
     public ItemBuffer(Role... roles) {
@@ -58,6 +59,18 @@ public class ItemBuffer implements WorldlyContainer, ItemAccess {
     /** Limits which items others may insert into INPUT and STORAGE slots. */
     public ItemBuffer setInputFilter(Predicate<ItemStack> filter) {
         this.inputFilter = filter;
+        return this;
+    }
+
+    /** Which items others may insert into each INPUT and STORAGE slot. */
+    @FunctionalInterface
+    public interface SlotFilter {
+        boolean test(int slot, ItemStack stack);
+    }
+
+    /** Limits which items others may insert into each INPUT and STORAGE slot, on top of the input filter. */
+    public ItemBuffer setSlotFilter(SlotFilter filter) {
+        this.slotFilter = filter;
         return this;
     }
 
@@ -244,7 +257,7 @@ public class ItemBuffer implements WorldlyContainer, ItemAccess {
 
     @Override
     public boolean canPlaceItem(int slot, ItemStack stack) {
-        return roles[slot] != Role.OUTPUT && inputFilter.test(stack);
+        return roles[slot] != Role.OUTPUT && inputFilter.test(stack) && slotFilter.test(slot, stack);
     }
 
     // WorldlyContainer: every slot is reachable from every side; the roles decide what is allowed.

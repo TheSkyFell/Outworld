@@ -8,6 +8,7 @@ import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.platform.Services;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.stress.StressScenarios;
+import io.github.theskyfell.outworld.industry.machine.AssemblerMenu;
 import io.github.theskyfell.outworld.industry.test.BeltsStressScenario;
 import io.github.theskyfell.outworld.industry.test.MachinesStressScenario;
 import io.github.theskyfell.outworld.industry.test.TestMachine;
@@ -34,7 +35,10 @@ public final class IndustryModule implements OutworldModule {
 
     @Override
     public void registerPayloads(Payloads payloads) {
-        payloads.serverbound(TestPing.TYPE, TestPing.CODEC, TestMachine::handlePing)
+        payloads.serverbound(AssemblerMenu.Choose.TYPE, AssemblerMenu.Choose.CODEC, AssemblerMenu::handleChoose)
+                .clientbound(AssemblerMenu.RecipeList.TYPE, AssemblerMenu.RecipeList.CODEC)
+                .clientbound(AssemblerMenu.Chosen.TYPE, AssemblerMenu.Chosen.CODEC)
+                .serverbound(TestPing.TYPE, TestPing.CODEC, TestMachine::handlePing)
                 .clientbound(TestPong.TYPE, TestPong.CODEC);
     }
 
@@ -58,6 +62,8 @@ public final class IndustryModule implements OutworldModule {
         transfers.energy(IndustryContent.INSERTER.get(), (inserter, side) -> inserter.energy());
         transfers.energy(IndustryContent.ARC_FURNACE.get(), (furnace, side) -> furnace.energy());
         transfers.items(IndustryContent.ARC_FURNACE.get(), (furnace, side) -> furnace.items());
+        transfers.energy(IndustryContent.ASSEMBLER.get(), (assembler, side) -> assembler.energy());
+        transfers.items(IndustryContent.ASSEMBLER.get(), (assembler, side) -> assembler.items());
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));

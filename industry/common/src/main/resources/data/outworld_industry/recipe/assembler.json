@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ACA",
+    "PTP",
+    "ARA"
+  ],
+  "key": {
+    "A": "outworld_industry:aluminium_ingot",
+    "C": "minecraft:crafter",
+    "P": "minecraft:piston",
+    "T": "minecraft:crafting_table",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "outworld_industry:assembler",
+    "count": 1
+  }
+}

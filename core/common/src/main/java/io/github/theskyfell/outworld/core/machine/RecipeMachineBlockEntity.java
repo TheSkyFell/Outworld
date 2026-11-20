@@ -25,7 +25,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponentPatch;
 import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -167,6 +169,23 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
 
     public List<GasTank> gasOutputs() {
         return gasOutputs;
+    }
+
+    /** Opens the machine's screen for a player. Machines with a screen of their own override this. */
+    public void openMenu(ServerPlayer player, Component title) {
+        MachineMenu.open(player, this, title);
+    }
+
+    /**
+     * Drops the current recipe and its progress, and looks for a recipe again: for machines whose
+     * choice of recipe changed in a way their contents don't show.
+     */
+    protected void resetRecipe() {
+        recipe = null;
+        progress = 0;
+        recipeCheckNeeded = true;
+        setChanged();
+        wake();
     }
 
     /** Ticks of work done on the current recipe. */
@@ -421,7 +440,8 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return null;
     }
 
-    private boolean matches(MachineRecipe candidate) {
+    /** Whether the machine holds every input this recipe needs. */
+    protected boolean matches(MachineRecipe candidate) {
         if (candidate.items().isEmpty() && candidate.fluids().isEmpty() && candidate.gases().isEmpty()) {
             return false;
         }

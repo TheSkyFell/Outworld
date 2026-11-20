@@ -60,6 +60,9 @@
 # - upgrades: a crusher at 1 136 1 with eight speed upgrades crushes 8 raw iron in about 5 seconds (40
 #   without); one at 4 136 1 with four speed and eight efficiency upgrades crushes 2 raw iron on the
 #   2,000 FE it holds, which on its own pays for one, and keeps 400 FE
+# - the assembler: one at 10 136 1 set to the stick recipe turns 4 oak planks into 8 sticks; one at
+#   13 136 1 set to the torch recipe takes sticks and coal from a hopper above it, but not the dirt in
+#   the same hopper, and makes 8 torches
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -186,6 +189,10 @@ speed_output=""
 efficiency_output=""
 efficiency_energy=""
 upgrade_state=""
+assembler_sticks=""
+assembler_torches=""
+assembler_hopper=""
+assembler_state=""
 belts_stress_start=""
 belts_stress_status=""
 gas_bottom=""
@@ -476,6 +483,21 @@ if [[ "$result" == "done" ]]; then
     efficiency_energy="$(rcon data get block 4 136 1 energy 2>&1 || true)"
     upgrade_state="speed: $(rcon data get block 1 136 1 2>&1 | cut -c1-400 || true) | efficiency: $(rcon data get block 4 136 1 2>&1 | cut -c1-400 || true)"
 
+    # Assembler: sticks from planks already inside, and torches from what a hopper brings.
+    rcon setblock 10 135 1 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 10 136 1 'outworld_industry:assembler{recipe:"minecraft:stick",Items:[{Slot:0b,id:"minecraft:oak_planks",count:4}]}' > /dev/null 2>&1 || true
+    rcon setblock 13 135 1 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 13 136 1 'outworld_industry:assembler{recipe:"minecraft:torch"}' > /dev/null 2>&1 || true
+    rcon setblock 13 137 1 'minecraft:hopper[facing=down]{Items:[{Slot:0b,id:"minecraft:stick",count:2},{Slot:1b,id:"minecraft:dirt",count:1},{Slot:2b,id:"minecraft:coal",count:2}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 15); do
+        sleep 1
+        assembler_sticks="$(rcon data get block 10 136 1 'Items[{Slot:9b}]' 2>&1 || true)"
+        assembler_torches="$(rcon data get block 13 136 1 'Items[{Slot:9b}]' 2>&1 || true)"
+        [[ "$assembler_sticks" == *"count: 8"* && "$assembler_torches" == *"count: 8"* ]] && break
+    done
+    assembler_hopper="$(rcon data get block 13 137 1 Items 2>&1 | cut -c1-300 || true)"
+    assembler_state="sticks: $(rcon data get block 10 136 1 2>&1 | cut -c1-400 || true) | torches: $(rcon data get block 13 136 1 2>&1 | cut -c1-400 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -515,12 +537,12 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 30 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 47 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 18 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 31 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 48 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 19 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
-check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
+check_log "Industry menus registered" 'Registered 2 entries in minecraft:menu for outworld_industry'
 check_log "Core's machine menu registered" 'Registered 1 entries in minecraft:menu for outworld( |$)'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
@@ -727,6 +749,16 @@ if [[ "$speed_output" == *"crushed_iron"* && "$speed_output" == *"count: 16"* ]]
     pass "eight speed upgrades crushed 8 raw iron within 10 seconds"
 else
     fail "16 crushed iron within 10 seconds from a crusher with eight speed upgrades (slot: ${speed_output:-none}; ${upgrade_state:-none})"
+fi
+if [[ "$assembler_sticks" == *"minecraft:stick"* && "$assembler_sticks" == *"count: 8"* ]]; then
+    pass "the assembler made 8 sticks from 4 planks"
+else
+    fail "8 sticks from an assembler set to the stick recipe with 4 oak planks (slot: ${assembler_sticks:-none}; ${assembler_state:-none})"
+fi
+if [[ "$assembler_torches" == *"minecraft:torch"* && "$assembler_torches" == *"count: 8"* && "$assembler_hopper" == *"minecraft:dirt"* ]]; then
+    pass "the assembler made 8 torches from a hopper's sticks and coal, and left its dirt"
+else
+    fail "8 torches from an assembler fed sticks and coal by a hopper, with the dirt left in the hopper (slot: ${assembler_torches:-none}; hopper: ${assembler_hopper:-none}; ${assembler_state:-none})"
 fi
 if [[ "$efficiency_output" == *"crushed_iron"* && "$efficiency_output" == *"count: 4"* && "$efficiency_energy" =~ :\ 400L$ ]]; then
     pass "efficiency upgrades crushed 2 raw iron on 2,000 FE and left 400 FE"
