@@ -18,6 +18,13 @@ comment="$(mktemp)"
     if [[ ! -f "$log" ]]; then
         echo "No log file was written; the step failed before it started. See the run above."
     else
+        echo "<details><summary>First 20 lines</summary>"
+        echo
+        echo '```'
+        head -n 20 "$log" | cut -c1-300
+        echo '```'
+        echo "</details>"
+        echo
         echo "<details><summary>Errors</summary>"
         echo
         echo '```'

@@ -1,18 +1,17 @@
 pluginManagement {
+    // The loader mavens come first and serve the build tools' own libraries too (ASM, Gson, Lorenz),
+    // so the build doesn't depend on Maven Central alone.
     repositories {
+        maven {
+            name = 'Fabric'
+            url = uri('https://maven.fabricmc.net/')
+        }
+        maven {
+            name = 'NeoForged'
+            url = uri('https://maven.neoforged.net/releases')
+        }
         gradlePluginPortal()
         mavenCentral()
-        exclusiveContent {
-            forRepository {
-                maven {
-                    name = 'Fabric'
-                    url = uri('https://maven.fabricmc.net')
-                }
-            }
-            filter {
-                includeGroupAndSubgroups('net.fabricmc')
-            }
-        }
     }
 }
 

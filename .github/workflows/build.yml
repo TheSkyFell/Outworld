@@ -29,7 +29,9 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       - name: Build
-        run: ./gradlew build --stacktrace 2>&1 | tee build.log
+        run: |
+          .github/scripts/check-repositories.sh 2>&1 | tee build.log
+          ./gradlew build --stacktrace 2>&1 | tee -a build.log
 
       - name: Upload mod jars
         uses: actions/upload-artifact@v7
