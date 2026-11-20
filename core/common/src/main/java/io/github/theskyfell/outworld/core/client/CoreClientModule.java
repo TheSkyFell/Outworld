@@ -9,7 +9,7 @@ import io.github.theskyfell.outworld.core.multiblock.MultiblockControllerBlock;
 public final class CoreClientModule implements OutworldClientModule {
     @Override
     public void registerScreens(ScreenRegistrar screens) {
-        screens.register(CoreContent.MACHINE_MENU.get(), MachineScreen<MachineMenu>::new);
+        screens.<MachineMenu, MachineScreen<MachineMenu>>register(CoreContent.MACHINE_MENU.get(), MachineScreen::new);
     }
 
     @Override
