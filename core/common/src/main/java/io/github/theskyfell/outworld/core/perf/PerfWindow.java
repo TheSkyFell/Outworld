@@ -43,6 +43,11 @@ public final class PerfWindow {
         tickCalls = 0;
     }
 
+    /** Nanoseconds spent in the most recently closed tick, or 0 if none has closed. */
+    public long lastNanos() {
+        return filled == 0 ? 0 : nanos[(next + TICKS - 1) % TICKS];
+    }
+
     /** How many closed ticks the window holds, up to {@link #TICKS}. */
     public int ticks() {
         return filled;

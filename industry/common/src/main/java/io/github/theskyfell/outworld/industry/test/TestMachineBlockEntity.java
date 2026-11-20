@@ -17,6 +17,8 @@ import net.minecraft.world.level.storage.ValueOutput;
  * tick of work costs {@link #ENERGY_PER_TICK} FE, which it pulls from neighbouring energy storages
  * (from any mod) through the loader's energy API. Without energy it sleeps until a neighbour changes
  * or energy is pushed into it. The totals are saved, so tests can read them with {@code /data get block}.
+ * With {@link #setRepeat repeat} on, it starts a new job as soon as one ends, so it never runs out
+ * of work (the stress test uses this).
  */
 public final class TestMachineBlockEntity extends MachineBlockEntity {
     public static final int JOB_TICKS = 100;
@@ -25,6 +27,7 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
     private final EnergyBuffer energy = new EnergyBuffer(1_000, 1_000, 0);
     private int workRemaining;
     private int workDone;
+    private boolean repeat;
 
     public TestMachineBlockEntity(BlockPos pos, BlockState state) {
         super(IndustryContent.TEST_MACHINE.get(), pos, state);
@@ -41,6 +44,15 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
         wake();
     }
 
+    /** Whether a new job starts as soon as one ends. */
+    public void setRepeat(boolean repeat) {
+        this.repeat = repeat;
+        setChanged();
+        if (repeat) {
+            wake();
+        }
+    }
+
     public int workDone() {
         return workDone;
     }
@@ -52,7 +64,10 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
     @Override
     protected boolean work(ServerLevel level, int elapsedTicks) {
         if (workRemaining <= 0) {
-            return false;
+            if (!repeat) {
+                return false;
+            }
+            workRemaining = JOB_TICKS;
         }
         int wanted = Math.min(elapsedTicks, workRemaining);
         long missing = wanted * ENERGY_PER_TICK - energy.getAmount();
@@ -67,7 +82,7 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
         workRemaining -= affordable;
         workDone += affordable;
         setChanged();
-        return workRemaining > 0;
+        return workRemaining > 0 || repeat;
     }
 
     private void pullEnergy(ServerLevel level, long amount) {
@@ -88,6 +103,7 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
         super.saveAdditional(output);
         output.putInt("work_remaining", workRemaining);
         output.putInt("work_done", workDone);
+        output.putBoolean("repeat", repeat);
         energy.save(output, "energy");
     }
 
@@ -96,6 +112,7 @@ public final class TestMachineBlockEntity extends MachineBlockEntity {
         super.loadAdditional(input);
         workRemaining = input.getIntOr("work_remaining", 0);
         workDone = input.getIntOr("work_done", 0);
+        repeat = input.getBooleanOr("repeat", false);
         energy.load(input, "energy");
     }
 }
