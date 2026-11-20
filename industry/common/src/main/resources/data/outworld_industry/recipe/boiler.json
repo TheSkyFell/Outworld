@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "CCC",
+    "CBC",
+    "IFI"
+  ],
+  "key": {
+    "C": "minecraft:copper_ingot",
+    "B": "minecraft:bucket",
+    "I": "minecraft:iron_ingot",
+    "F": "minecraft:furnace"
+  },
+  "result": {
+    "id": "outworld_industry:boiler",
+    "count": 1
+  }
+}
