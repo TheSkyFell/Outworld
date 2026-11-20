@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.industry.client;
 
+import io.github.theskyfell.outworld.core.client.BlockEntityRendererRegistrar;
 import io.github.theskyfell.outworld.core.client.ClientPayloadHandlers;
 import io.github.theskyfell.outworld.core.client.OutworldClientModule;
 import io.github.theskyfell.outworld.core.client.ScreenRegistrar;
@@ -11,6 +12,11 @@ public final class IndustryClientModule implements OutworldClientModule {
     @Override
     public void registerScreens(ScreenRegistrar screens) {
         screens.register(IndustryContent.TEST_MACHINE_MENU.get(), TestMachineScreen::new);
+    }
+
+    @Override
+    public void registerBlockEntityRenderers(BlockEntityRendererRegistrar renderers) {
+        renderers.register(IndustryContent.BELT.get(), BeltRenderer::new);
     }
 
     @Override
