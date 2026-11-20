@@ -19,8 +19,6 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.server.level.ServerLevel;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import team.reborn.energy.api.EnergyStorage;
@@ -70,14 +68,6 @@ public final class FabricModules {
                 EnergyBuffer buffer = energy.get(blockEntity, side);
                 return buffer == null ? null : FabricEnergy.storageFor(buffer);
             }, type);
-        }
-
-        @Override
-        public void blockEnergy(AtBlock<EnergyBuffer> energy, Block... blocks) {
-            EnergyStorage.SIDED.registerForBlocks((level, pos, state, blockEntity, side) -> {
-                EnergyBuffer buffer = level instanceof ServerLevel serverLevel ? energy.get(serverLevel, pos, side) : null;
-                return buffer == null ? null : FabricEnergy.storageFor(buffer);
-            }, blocks);
         }
 
         @Override

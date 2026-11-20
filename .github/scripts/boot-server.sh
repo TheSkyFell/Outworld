@@ -26,10 +26,6 @@
 #   with a second one on top, ends with all 4,000 mB in the top tank
 # - the crusher runs recipes from data: on a creative battery at 8 100 2, a crusher given 3 raw iron
 #   turns it into 6 crushed iron; no Outworld data file fails to load
-# - energy flows through cables: a combustion generator at 10 100 6 burning one coal (from its data
-#   recipe) feeds three cables at 11..13 100 6, which a crusher at 14 100 6 draws on to turn 2 raw iron
-#   into 4 crushed iron
-# - a solar panel at 10 100 9, set to noon, charges an empty test battery next to it
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -121,9 +117,6 @@ mb_machines=""
 gas_top=""
 crusher_output=""
 crusher_state=""
-power_output=""
-power_state=""
-solar_battery=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -217,27 +210,6 @@ if [[ "$result" == "done" ]]; then
     done
     crusher_state="$(rcon data get block 8 101 2 2>&1 | cut -c1-600 || true)"
 
-    # Power: a combustion generator burning one coal, three cables, and a crusher with 2 raw iron.
-    rcon setblock 10 100 6 'outworld_industry:combustion_generator{Items:[{Slot:0b,id:"minecraft:coal",count:1}]}' > /dev/null 2>&1 || true
-    rcon fill 11 100 6 13 100 6 outworld_industry:cable > /dev/null 2>&1 || true
-    rcon setblock 14 100 6 'outworld_industry:crusher{Items:[{Slot:0b,id:"minecraft:raw_iron",count:2}]}' > /dev/null 2>&1 || true
-    for _ in $(seq 1 40); do
-        sleep 1
-        power_output="$(rcon data get block 14 100 6 'Items[{Slot:1b}]' 2>&1 || true)"
-        [[ "$power_output" == *"crushed_iron"* && "$power_output" == *"count: 4"* ]] && break
-    done
-    power_state="generator: $(rcon data get block 10 100 6 2>&1 | cut -c1-400 || true) | crusher: $(rcon data get block 14 100 6 2>&1 | cut -c1-400 || true)"
-
-    # Solar: an empty battery next to a panel at noon.
-    rcon time set noon > /dev/null 2>&1 || true
-    rcon setblock 11 100 9 'outworld_industry:test_battery{energy:0L}' > /dev/null 2>&1 || true
-    rcon setblock 10 100 9 outworld_industry:solar_panel > /dev/null 2>&1 || true
-    for _ in $(seq 1 20); do
-        sleep 1
-        solar_battery="$(rcon data get block 11 100 9 energy 2>&1 || true)"
-        [[ "$solar_battery" =~ :\ [1-9][0-9]*L?$ ]] && break
-    done
-
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -268,9 +240,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 10 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 13 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 9 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 7 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 10 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 7 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "Core's machine menu registered" 'Registered 1 entries in minecraft:menu for outworld( |$)'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
@@ -369,16 +341,6 @@ if [[ "$crusher_output" == *"crushed_iron"* && "$crusher_output" == *"count: 6"*
 else
     fail "6 crushed iron in the crusher's first output slot (slot: ${crusher_output:-none})"
 fi
-if [[ "$power_output" == *"crushed_iron"* && "$power_output" == *"count: 4"* ]]; then
-    pass "a combustion generator burning coal powered a crusher through three cables (2 raw iron > 4 crushed)"
-else
-    fail "4 crushed iron from a crusher powered by a generator through cables (slot: ${power_output:-none})"
-fi
-if [[ "$solar_battery" =~ :\ [1-9][0-9]*L?$ ]]; then
-    pass "a solar panel at noon charged the battery next to it (${solar_battery})"
-else
-    fail "solar panel charges an empty battery at noon (battery: ${solar_battery:-none})"
-fi
 data_errors="$(grep -i -E "couldn't (parse|load)|parsing error|failed to (parse|load)" "$log" | grep -i 'outworld' | cut -c1-300 | head -n 5)"
 if [[ -z "$data_errors" ]]; then
     pass "no Outworld data file failed to load"
@@ -456,8 +418,6 @@ fi
     echo "Gas: top tank ${gas_top:-none} | bottom tank ${gas_bottom:-none}"
     echo "Crusher output slot: ${crusher_output:-none}"
     echo "Crusher: ${crusher_state:-none}"
-    echo "Power: crusher output slot ${power_output:-none} | solar battery ${solar_battery:-none}"
-    echo "Power blocks: ${power_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"

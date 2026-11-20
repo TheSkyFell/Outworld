@@ -4,7 +4,6 @@ import io.github.theskyfell.outworld.core.event.OutworldEvents;
 import net.minecraft.server.level.ServerLevel;
 import net.neoforged.neoforge.common.NeoForge;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.server.ServerStartedEvent;
 import net.neoforged.neoforge.event.server.ServerStartingEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
@@ -30,16 +29,6 @@ final class NeoForgeEvents {
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post.class, event -> {
             if (event.getLevel() instanceof ServerLevel level) {
                 OutworldEvents.LEVEL_TICK_END.forEach(l -> l.accept(level));
-            }
-        });
-        NeoForge.EVENT_BUS.addListener(ChunkEvent.Load.class, event -> {
-            if (event.getLevel() instanceof ServerLevel level) {
-                OutworldEvents.CHUNK_LOAD.forEach(l -> l.onChunk(level, event.getChunk().getPos().x(), event.getChunk().getPos().z()));
-            }
-        });
-        NeoForge.EVENT_BUS.addListener(ChunkEvent.Unload.class, event -> {
-            if (event.getLevel() instanceof ServerLevel level) {
-                OutworldEvents.CHUNK_UNLOAD.forEach(l -> l.onChunk(level, event.getChunk().getPos().x(), event.getChunk().getPos().z()));
             }
         });
         NeoForge.EVENT_BUS.addListener(RegisterCommandsEvent.class, event ->

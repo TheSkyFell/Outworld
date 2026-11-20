@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.core.machine;
 
 import io.github.theskyfell.outworld.core.energy.Energy;
+import io.github.theskyfell.outworld.core.energy.EnergyAccess;
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.fluid.FluidAmount;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
@@ -36,16 +37,11 @@ import net.minecraft.world.level.storage.ValueOutput;
  * A machine that runs {@link MachineRecipe}s: it takes items, fluids and gases from its input slots
  * and tanks, uses energy every tick of work, and puts the results in its output slots and tanks.
  * Hoppers, pipes and inserters fill the inputs and empty the outputs; the machine itself never pulls
- * items, but it does draw energy from neighbouring energy storage (cables, batteries) when it runs
- * short.
- *
- * <p>A {@link Layout#generator() generator} runs its recipes the other way round for energy: a
- * recipe's {@code energy} is made every tick instead of used, and the machine pushes its energy into
- * neighbouring storage.
+ * items, but it does draw energy from neighbouring energy storage when it runs short.
  *
  * <p>It works in batches like every machine, and may finish several recipes in one batch. It sleeps
- * when it has no recipe to run or nowhere to put the results, and wakes when its contents change.
- * Short of energy (or, for a generator, with nowhere to put it) it checks again every second.
+ * when it has no recipe to run, no energy, or nowhere to put the results, and wakes when its
+ * contents change or energy arrives.
  */
 public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implements GasHolder {
     /**
@@ -54,18 +50,14 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
      * @param machine the id recipes name in their {@code machine} field
      * @param tankBuckets how much each fluid and gas tank holds, in buckets
      * @param energyCapacity how much energy the machine stores, in FE
-     * @param generator true if recipes make energy instead of using it
      */
     public record Layout(Identifier machine, int itemInputs, int itemOutputs, int fluidInputs, int fluidOutputs,
-            int gasInputs, int gasOutputs, int tankBuckets, long energyCapacity, boolean generator) {
+            int gasInputs, int gasOutputs, int tankBuckets, long energyCapacity) {
         /** A machine with only item slots. */
         public static Layout items(Identifier machine, int inputs, int outputs, long energyCapacity) {
-            return new Layout(machine, inputs, outputs, 0, 0, 0, 0, 0, energyCapacity, false);
+            return new Layout(machine, inputs, outputs, 0, 0, 0, 0, 0, energyCapacity);
         }
     }
-
-    /** How often a machine short of energy, or a generator with nowhere to put it, checks again. */
-    private static final int ENERGY_RETRY_TICKS = 20;
 
     private final Layout layout;
     private final EnergyBuffer energy;
@@ -82,10 +74,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
     protected RecipeMachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state, Layout layout) {
         super(type, pos, state);
         this.layout = layout;
-        // Machines take energy in; generators let it out.
-        this.energy = layout.generator()
-                ? new EnergyBuffer(layout.energyCapacity(), 0, layout.energyCapacity())
-                : new EnergyBuffer(layout.energyCapacity(), layout.energyCapacity(), 0);
+        this.energy = new EnergyBuffer(layout.energyCapacity(), layout.energyCapacity(), 0);
         ItemBuffer.Role[] roles = new ItemBuffer.Role[layout.itemInputs() + layout.itemOutputs()];
         for (int slot = 0; slot < roles.length; slot++) {
             roles[slot] = slot < layout.itemInputs() ? ItemBuffer.Role.INPUT : ItemBuffer.Role.OUTPUT;
@@ -179,21 +168,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
 
     @Override
     protected boolean work(ServerLevel level, int elapsedTicks) {
-        boolean busy = runRecipes(level, elapsedTicks);
-        if (layout.generator() && energy.getAmount() > 0) {
-            long pushed = Energy.pushToNeighbours(level, worldPosition, energy, energy.getAmount());
-            if (!busy && energy.getAmount() > 0) {
-                // Holding energy: keep pushing while it goes somewhere, otherwise look again later.
-                if (pushed > 0) {
-                    return true;
-                }
-                retryIn(ENERGY_RETRY_TICKS);
-            }
-        }
-        return busy;
-    }
-
-    private boolean runRecipes(ServerLevel level, int elapsedTicks) {
         int ticks = elapsedTicks;
         while (ticks > 0) {
             if (recipeCheckNeeded || recipe == null) {
@@ -217,27 +191,14 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             }
             int step = Math.min(ticks, recipe.time() - progress);
             long perTick = recipe.energy();
-            if (perTick > 0 && layout.generator()) {
-                long room = energy.getCapacity() - energy.getAmount();
-                if (room < step * perTick) {
-                    Energy.pushToNeighbours(level, worldPosition, energy, energy.getAmount());
-                    room = energy.getCapacity() - energy.getAmount();
-                }
-                step = (int) Math.min(step, room / perTick);
-                if (step <= 0) {
-                    retryIn(ENERGY_RETRY_TICKS); // full, and nothing takes the energy
-                    return false;
-                }
-                energy.setAmount(energy.getAmount() + step * perTick);
-            } else if (perTick > 0) {
+            if (perTick > 0) {
                 long needed = step * perTick;
                 if (energy.getAmount() < needed) {
-                    Energy.pullFromNeighbours(level, worldPosition, energy, needed - energy.getAmount());
+                    pullEnergy(level, needed - energy.getAmount());
                 }
                 step = (int) Math.min(step, energy.getAmount() / perTick);
                 if (step <= 0) {
-                    retryIn(ENERGY_RETRY_TICKS); // energy arriving through a cable doesn't wake us
-                    return false;
+                    return false; // sleep until energy arrives
                 }
                 energy.setAmount(energy.getAmount() - step * perTick);
             }
@@ -431,6 +392,19 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             int slot = layout.itemInputs() + i;
             if (!ItemStack.matches(items.getItem(slot), outputs.get(i))) {
                 items.setItem(slot, outputs.get(i));
+            }
+        }
+    }
+
+    private void pullEnergy(ServerLevel level, long amount) {
+        for (Direction direction : Direction.values()) {
+            long room = Math.min(amount, energy.getCapacity() - energy.getAmount());
+            if (room <= 0) {
+                return;
+            }
+            EnergyAccess source = Energy.find(level, worldPosition.relative(direction), direction.getOpposite());
+            if (source != null) {
+                energy.setAmount(energy.getAmount() + source.extract(room, false));
             }
         }
     }

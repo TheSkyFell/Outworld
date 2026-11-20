@@ -2,7 +2,6 @@ package io.github.theskyfell.outworld.core;
 
 import io.github.theskyfell.outworld.core.command.OutworldCommand;
 import io.github.theskyfell.outworld.core.config.ConfigFile;
-import io.github.theskyfell.outworld.core.energy.EnergyGrids;
 import io.github.theskyfell.outworld.core.event.OutworldEvents;
 import io.github.theskyfell.outworld.core.gas.Gas;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
@@ -61,12 +60,9 @@ public final class CoreModule implements OutworldModule {
         OutworldEvents.SERVER_TICK_START.register(server -> Perf.tickStarted());
         OutworldEvents.SERVER_TICK_END.register(server -> Perf.tickEnded());
         OutworldEvents.LEVEL_TICK_END.register(MachineScheduler::tick);
-        OutworldEvents.CHUNK_LOAD.register(EnergyGrids::chunkChanged);
-        OutworldEvents.CHUNK_UNLOAD.register(EnergyGrids::chunkChanged);
         OutworldEvents.SERVER_STOPPING.register(server -> {
             MachineScheduler.clear();
             MultiblockTracker.clear();
-            EnergyGrids.clear();
             StressTest.reset();
             Perf.clear();
         });
