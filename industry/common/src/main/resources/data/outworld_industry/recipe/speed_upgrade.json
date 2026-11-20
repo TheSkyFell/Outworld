@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ARA",
+    "RGR",
+    "ARA"
+  ],
+  "key": {
+    "A": "outworld_industry:aluminium_ingot",
+    "R": "minecraft:redstone",
+    "G": "minecraft:gold_ingot"
+  },
+  "result": {
+    "id": "outworld_industry:speed_upgrade",
+    "count": 1
+  }
+}

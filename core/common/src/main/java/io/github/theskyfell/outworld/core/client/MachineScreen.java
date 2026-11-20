@@ -13,8 +13,8 @@ import net.minecraft.world.inventory.Slot;
 
 /**
  * The screen of every recipe machine: input slots on the left, an arrow showing progress, output
- * slots on the right, the energy bar on the far left and tank gauges on the far right. Drawn from
- * flat colours, so it needs no textures.
+ * slots on the right, the energy bar on the far left, tank gauges on the far right and the upgrade
+ * slots below them. Drawn from flat colours, so it needs no textures.
  */
 public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
     private static final int PANEL = 0xFFC6C6C6;
@@ -34,7 +34,7 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
     private static final int TANK_RIGHT = 168;
 
     public MachineScreen(MachineMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 176, 166);
+        super(menu, inventory, title, 176, MachineMenu.HEIGHT);
     }
 
     /** Puts new readings on the open machine screen, if they are for it. */
@@ -99,6 +99,8 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         MachineValues values = menu.values();
         String energy = String.format(Locale.ROOT, "%,d / %,d FE", values.energy(), values.energyCapacity());
         graphics.text(font, Component.literal(energy), MachineMenu.INPUT_X, MachineMenu.SLOT_Y + 22, TEXT, false);
+        Component upgrades = Component.translatable("container.outworld.upgrades");
+        graphics.text(font, upgrades, MachineMenu.UPGRADE_X - 4 - font.width(upgrades), MachineMenu.UPGRADE_Y + 5, TEXT, false);
         // Hovering a gauge shows what it holds.
         int x = mouseX - leftPos;
         int y = mouseY - topPos;

@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.industry;
 
 import io.github.theskyfell.outworld.core.fluid.OutworldFluid;
+import io.github.theskyfell.outworld.core.machine.MachineUpgrade;
+import io.github.theskyfell.outworld.core.machine.MachineUpgrades;
 import io.github.theskyfell.outworld.core.menu.Menus;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import io.github.theskyfell.outworld.core.registry.CreativeTabs;
@@ -22,6 +24,7 @@ import io.github.theskyfell.outworld.industry.machine.GasLiquefierBlock;
 import io.github.theskyfell.outworld.industry.machine.GasLiquefierBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlock;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.UpgradeItem;
 import io.github.theskyfell.outworld.industry.pipe.FluidPipeBlock;
 import io.github.theskyfell.outworld.industry.pipe.FluidTankBlock;
 import io.github.theskyfell.outworld.industry.pipe.GasPipeBlock;
@@ -307,6 +310,13 @@ public final class IndustryContent {
             key -> new Item(new Item.Properties().setId(key)));
     public static final RegistryEntry<Item, Item> STEEL_INGOT = ITEMS.register("steel_ingot",
             key -> new Item(new Item.Properties().setId(key)));
+
+    // Machine upgrades: up to eight of each kind go in a recipe machine's upgrade slots.
+
+    public static final RegistryEntry<Item, UpgradeItem> SPEED_UPGRADE = ITEMS.register("speed_upgrade",
+            key -> new UpgradeItem(MachineUpgrade.Kind.SPEED, new Item.Properties().setId(key).stacksTo(MachineUpgrades.MAX_PER_KIND)));
+    public static final RegistryEntry<Item, UpgradeItem> EFFICIENCY_UPGRADE = ITEMS.register("efficiency_upgrade",
+            key -> new UpgradeItem(MachineUpgrade.Kind.EFFICIENCY, new Item.Properties().setId(key).stacksTo(MachineUpgrades.MAX_PER_KIND)));
 
     // Temporary test blocks
 
