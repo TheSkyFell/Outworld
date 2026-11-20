@@ -2,6 +2,7 @@ package io.github.theskyfell.outworld.core.fabric;
 
 import io.github.theskyfell.outworld.core.energy.EnergyAccess;
 import io.github.theskyfell.outworld.core.fluid.FluidAccess;
+import io.github.theskyfell.outworld.core.fluid.OutworldFluid;
 import io.github.theskyfell.outworld.core.item.ItemAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
@@ -28,6 +29,7 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -41,6 +43,7 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.material.Fluid;
 import team.reborn.energy.api.EnergyStorage;
 
 public final class FabricPlatform implements Platform {
@@ -116,6 +119,11 @@ public final class FabricPlatform implements Platform {
                 .icon(icon)
                 .displayItems((parameters, output) -> items.get().forEach(output::accept))
                 .build();
+    }
+
+    @Override
+    public Fluid createFluid(ResourceKey<Fluid> key, int color) {
+        return OutworldFluid.plain(color);
     }
 
     @Override
