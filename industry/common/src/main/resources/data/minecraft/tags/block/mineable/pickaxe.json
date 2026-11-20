@@ -1,7 +1,5 @@
 {
   "values": [
-    "outworld_industry:steam_turbine",
-    "outworld_industry:boiler",
     "outworld_industry:battery",
     "outworld_industry:gas_liquefier",
     "outworld_industry:gas_tank",
