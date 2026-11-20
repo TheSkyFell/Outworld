@@ -47,8 +47,6 @@ public final class IndustryModule implements OutworldModule {
         transfers.fluids(IndustryContent.ORE_WASHER.get(), (washer, side) -> washer.exposedFluidTank(side));
         transfers.energy(IndustryContent.ELECTROLYZER.get(), (electrolyzer, side) -> electrolyzer.energy());
         transfers.fluids(IndustryContent.ELECTROLYZER.get(), (electrolyzer, side) -> electrolyzer.exposedFluidTank(side));
-        transfers.energy(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.energy());
-        transfers.fluids(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.exposedFluidTank(side));
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));

@@ -4,7 +4,6 @@ import io.github.theskyfell.outworld.core.CoreContent;
 import io.github.theskyfell.outworld.core.fluid.FluidAmount;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
 import io.github.theskyfell.outworld.core.fluid.FluidUnits;
-import io.github.theskyfell.outworld.core.fluid.OutworldFluid;
 import io.github.theskyfell.outworld.core.gas.Gas;
 import io.github.theskyfell.outworld.core.gas.GasStack;
 import io.github.theskyfell.outworld.core.gas.GasTank;
@@ -142,9 +141,7 @@ public final class MachineMenu extends AbstractContainerMenu {
     private static MachineValues.Tank fluidTank(FluidTank tank) {
         FluidAmount contents = tank.getContents();
         String id = contents.isEmpty() ? "" : BuiltInRegistries.FLUID.getKey(contents.fluid()).toString();
-        int color = contents.isEmpty() ? 0
-                : contents.fluid() instanceof OutworldFluid fluid ? fluid.color()
-                : contents.fluid().isSame(Fluids.LAVA) ? 0xff6a00 : 0x3f76e4;
+        int color = contents.isEmpty() ? 0 : contents.fluid().isSame(Fluids.LAVA) ? 0xff6a00 : 0x3f76e4;
         return new MachineValues.Tank(false, id, contents.amount() / FluidUnits.MILLIBUCKET,
                 tank.getCapacity() / FluidUnits.MILLIBUCKET, color);
     }

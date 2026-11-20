@@ -30,7 +30,6 @@ import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.storage.ValueInput;
 import net.minecraft.world.level.storage.ValueOutput;
@@ -206,11 +205,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
      * Pushes the output tanks' fluid and gas into neighbouring storage (pipes, tanks, other machines'
      * inputs). Items stay in the output slots for hoppers and inserters to take.
      *
-     * <p>With one output tank of a kind, it pushes out of every side. With several, each has its own
-     * side, so their contents never meet in one pipe: as you look at the machine's front, the first
-     * goes out of its left side, the second out of its right side, and any more out of its back. The
-     * electrolyzer, say, puts hydrogen out on the left and oxygen on the right.
-     *
      * @return true if something is left in an output tank and a neighbour has storage that might take
      *     it later
      */
@@ -226,9 +220,8 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             if (anyFluid) {
                 FluidAccess target = FluidTransfer.find(level, neighbour, direction.getOpposite());
                 if (target != null) {
-                    for (int i = 0; i < fluidOutputs.size(); i++) {
-                        FluidTank tank = fluidOutputs.get(i);
-                        if (!tank.getContents().isEmpty() && outputSide(i, fluidOutputs.size(), direction)) {
+                    for (FluidTank tank : fluidOutputs) {
+                        if (!tank.getContents().isEmpty()) {
                             FluidTransfer.move(tank, target, fluid -> true, tank.getContents().amount());
                             waiting |= !tank.getContents().isEmpty();
                         }
@@ -238,9 +231,8 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             if (anyGas) {
                 GasAccess target = GasTransfer.find(level, neighbour, direction.getOpposite());
                 if (target != null) {
-                    for (int i = 0; i < gasOutputs.size(); i++) {
-                        GasTank tank = gasOutputs.get(i);
-                        if (!tank.getContents().isEmpty() && outputSide(i, gasOutputs.size(), direction)) {
+                    for (GasTank tank : gasOutputs) {
+                        if (!tank.getContents().isEmpty()) {
                             GasTransfer.move(tank, target, gas -> true, tank.getAmount());
                             waiting |= !tank.getContents().isEmpty();
                         }
@@ -295,23 +287,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             }
         }
         return pulled;
-    }
-
-    /** Whether output tank {@code index} of {@code count} of one kind pushes out towards {@code direction}. */
-    private boolean outputSide(int index, int count, Direction direction) {
-        if (count <= 1) {
-            return true;
-        }
-        BlockState state = getBlockState();
-        Direction front = state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
-                ? state.getValue(BlockStateProperties.HORIZONTAL_FACING)
-                : Direction.NORTH;
-        Direction side = switch (index) {
-            case 0 -> front.getClockWise(); // left, looking at the front
-            case 1 -> front.getCounterClockWise(); // right
-            default -> front.getOpposite(); // back
-        };
-        return direction == side;
     }
 
     private boolean runRecipes(ServerLevel level, int elapsedTicks) {

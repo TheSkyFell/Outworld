@@ -33,11 +33,10 @@ public final class GridInfo {
         if (contents.isEmpty()) {
             return Component.translatable("message.outworld_industry.grid.empty", capacity);
         }
-        // A placeable fluid is named after its block; anything else by fluid.<namespace>.<path>.
+        // A placeable fluid is named after its block; anything else by its id.
         var block = contents.fluid().defaultFluidState().createLegacyBlock().getBlock();
-        var id = BuiltInRegistries.FLUID.getKey(contents.fluid());
         Component name = block == Blocks.AIR
-                ? Component.translatableWithFallback("fluid." + id.getNamespace() + "." + id.getPath(), id.toString())
+                ? Component.literal(BuiltInRegistries.FLUID.getKey(contents.fluid()).toString())
                 : block.getName();
         return Component.translatable("message.outworld_industry.grid.contents", name,
                 String.format("%,d", contents.amount() / FluidUnits.MILLIBUCKET), capacity);
