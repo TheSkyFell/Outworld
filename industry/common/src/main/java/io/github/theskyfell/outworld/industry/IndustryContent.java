@@ -56,6 +56,7 @@ import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.level.material.MapColor;
 
 /** Industry's blocks, items and menus. */
 public final class IndustryContent {
@@ -211,6 +212,56 @@ public final class IndustryContent {
     public static final RegistryEntry<Item, Item> PURIFIED_COPPER = ITEMS.register("purified_copper",
             key -> new Item(new Item.Properties().setId(key)));
     public static final RegistryEntry<Item, Item> PURIFIED_GOLD = ITEMS.register("purified_gold",
+            key -> new Item(new Item.Properties().setId(key)));
+
+    // Aluminium and titanium: ores, raw ore, the ore chain's crushed and purified forms, ingots and blocks.
+    // Aluminium only smelts in the electric furnace; titanium will need the arc furnace.
+
+    public static final RegistryEntry<Block, Block> BAUXITE_ORE = BLOCKS.register("bauxite_ore",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.STONE).requiresCorrectToolForDrops().strength(3.0F, 3.0F)));
+
+    public static final RegistryEntry<Item, BlockItem> BAUXITE_ORE_ITEM = ITEMS.register("bauxite_ore",
+            key -> new BlockItem(BAUXITE_ORE.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, Block> TITANIUM_ORE = BLOCKS.register("titanium_ore",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.STONE).requiresCorrectToolForDrops().strength(3.0F, 3.0F)));
+
+    public static final RegistryEntry<Item, BlockItem> TITANIUM_ORE_ITEM = ITEMS.register("titanium_ore",
+            key -> new BlockItem(TITANIUM_ORE.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, Block> DEEPSLATE_TITANIUM_ORE = BLOCKS.register("deepslate_titanium_ore",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.DEEPSLATE).requiresCorrectToolForDrops().strength(4.5F, 3.0F).sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryEntry<Item, BlockItem> DEEPSLATE_TITANIUM_ORE_ITEM = ITEMS.register("deepslate_titanium_ore",
+            key -> new BlockItem(DEEPSLATE_TITANIUM_ORE.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, Block> ALUMINIUM_BLOCK = BLOCKS.register("aluminium_block",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(5.0F, 6.0F).sound(SoundType.METAL)));
+
+    public static final RegistryEntry<Item, BlockItem> ALUMINIUM_BLOCK_ITEM = ITEMS.register("aluminium_block",
+            key -> new BlockItem(ALUMINIUM_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, Block> TITANIUM_BLOCK = BLOCKS.register("titanium_block",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.METAL).requiresCorrectToolForDrops().strength(5.0F, 6.0F).sound(SoundType.METAL)));
+
+    public static final RegistryEntry<Item, BlockItem> TITANIUM_BLOCK_ITEM = ITEMS.register("titanium_block",
+            key -> new BlockItem(TITANIUM_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Item, Item> RAW_BAUXITE = ITEMS.register("raw_bauxite",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> CRUSHED_BAUXITE = ITEMS.register("crushed_bauxite",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> PURIFIED_BAUXITE = ITEMS.register("purified_bauxite",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> ALUMINIUM_INGOT = ITEMS.register("aluminium_ingot",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> RAW_TITANIUM = ITEMS.register("raw_titanium",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> CRUSHED_TITANIUM = ITEMS.register("crushed_titanium",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> PURIFIED_TITANIUM = ITEMS.register("purified_titanium",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> TITANIUM_INGOT = ITEMS.register("titanium_ingot",
             key -> new Item(new Item.Properties().setId(key)));
 
     // Temporary test blocks

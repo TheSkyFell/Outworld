@@ -27,6 +27,8 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.material.Fluid;
 
 /**
@@ -74,6 +76,14 @@ public interface Platform {
     <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks);
 
     /** The energy storage at {@code pos} as seen from {@code side}, from any mod, or null. */
+    /**
+     * Adds a placed feature (such as an ore) to every overworld biome, at a generation step. On Fabric
+     * this goes through the biome modification API; NeoForge reads biome modifiers from data instead,
+     * so a mod also ships {@code data/<namespace>/neoforge/biome_modifier/<name>.json} and this does
+     * nothing there.
+     */
+    void addOverworldFeature(GenerationStep.Decoration step, ResourceKey<PlacedFeature> feature);
+
     EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side);
 
     /** The item storage at {@code pos} as seen from {@code side}, from any mod or vanilla, or null. */

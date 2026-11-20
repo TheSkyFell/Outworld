@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": "outworld_industry:titanium_ingot"
+  },
+  "result": {
+    "id": "outworld_industry:titanium_block",
+    "count": 1
+  }
+}

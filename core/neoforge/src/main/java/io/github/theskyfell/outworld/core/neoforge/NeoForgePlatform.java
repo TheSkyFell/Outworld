@@ -30,6 +30,8 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.material.Fluid;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
@@ -102,6 +104,11 @@ public final class NeoForgePlatform implements Platform {
     @Override
     public Fluid createFluid(ResourceKey<Fluid> key, int color) {
         return new NeoForgeFluid(key, color);
+    }
+
+    @Override
+    public void addOverworldFeature(GenerationStep.Decoration step, ResourceKey<PlacedFeature> feature) {
+        // NeoForge adds features to biomes from biome modifier files in data, which the mod ships.
     }
 
     @Override

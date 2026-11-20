@@ -47,6 +47,9 @@
 #   which form one 200,000 FE grid and power a crusher on top of them
 # - steam power: a boiler at 12 101 3 burning coal boils water from a cauldron below into steam, which
 #   a gas pipe carries to a steam turbine that charges a battery at 15 101 3
+# - aluminium and titanium: their ore features place ore in stone (/place feature into blocks of stone
+#   at y 110-116), the crusher crushes raw titanium, and the electric furnace smelts crushed bauxite into
+#   an aluminium ingot
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -155,6 +158,10 @@ bank_grid=""
 bank_crusher=""
 steam_grid=""
 steam_state=""
+bauxite_placed=""
+titanium_placed=""
+titanium_crushed=""
+aluminium_smelted=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -357,6 +364,24 @@ if [[ "$result" == "done" ]]; then
     done
     steam_state="gas pipe: $(rcon outworld grid 13 101 3 2>&1 || true) | boiler: $(rcon data get block 12 101 3 2>&1 | cut -c1-400 || true)"
 
+    # Materials: ore features, crushing titanium and smelting bauxite.
+    rcon fill 1 110 1 7 116 7 minecraft:stone > /dev/null 2>&1 || true
+    rcon fill 1 110 9 7 116 15 minecraft:stone > /dev/null 2>&1 || true
+    rcon place feature outworld_industry:ore_bauxite 4 113 4 > /dev/null 2>&1 || true
+    rcon place feature outworld_industry:ore_titanium 4 113 12 > /dev/null 2>&1 || true
+    bauxite_placed="$(rcon fill 1 110 1 7 116 7 minecraft:stone replace outworld_industry:bauxite_ore 2>&1 || true)"
+    titanium_placed="$(rcon fill 1 110 9 7 116 15 minecraft:stone replace outworld_industry:titanium_ore 2>&1 || true)"
+    rcon setblock 10 110 2 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 10 111 2 'outworld_industry:electric_furnace{Items:[{Slot:0b,id:"outworld_industry:crushed_bauxite",count:1}]}' > /dev/null 2>&1 || true
+    rcon setblock 12 110 2 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 12 111 2 'outworld_industry:crusher{Items:[{Slot:0b,id:"outworld_industry:raw_titanium",count:1}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+        sleep 1
+        aluminium_smelted="$(rcon data get block 10 111 2 'Items[{Slot:1b}]' 2>&1 || true)"
+        titanium_crushed="$(rcon data get block 12 111 2 'Items[{Slot:1b}]' 2>&1 || true)"
+        [[ "$aluminium_smelted" == *"aluminium_ingot"* && "$titanium_crushed" == *"crushed_titanium"* && "$titanium_crushed" == *"count: 2"* ]] && break
+    done
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -387,8 +412,8 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 21 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 27 entries in minecraft:item for outworld_industry'
+check_log "Industry blocks registered" 'Registered 26 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 40 entries in minecraft:item for outworld_industry'
 check_log "Industry block entity types registered" 'Registered 15 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
@@ -549,6 +574,26 @@ if [[ "$steam_grid" =~ :\ [1-9][0-9,]*\ /\ 100,000\ FE ]]; then
     pass "a boiler's steam drove a steam turbine through a gas pipe and charged a battery (${steam_grid})"
 else
     fail "energy in the battery after boiler > gas pipe > steam turbine (battery: ${steam_grid:-none})"
+fi
+if [[ "$bauxite_placed" =~ filled\ ([1-9][0-9]*) ]]; then
+    pass "the bauxite ore feature placed ${BASH_REMATCH[1]} ore in stone"
+else
+    fail "bauxite ore from /place feature outworld_industry:ore_bauxite (got: ${bauxite_placed:-none})"
+fi
+if [[ "$titanium_placed" =~ filled\ ([1-9][0-9]*) ]]; then
+    pass "the titanium ore feature placed ${BASH_REMATCH[1]} ore in stone"
+else
+    fail "titanium ore from /place feature outworld_industry:ore_titanium (got: ${titanium_placed:-none})"
+fi
+if [[ "$titanium_crushed" == *"crushed_titanium"* && "$titanium_crushed" == *"count: 2"* ]]; then
+    pass "the crusher crushed raw titanium into 2 crushed titanium"
+else
+    fail "2 crushed titanium from a crusher given raw titanium (slot: ${titanium_crushed:-none})"
+fi
+if [[ "$aluminium_smelted" == *"aluminium_ingot"* ]]; then
+    pass "the electric furnace smelted crushed bauxite into an aluminium ingot"
+else
+    fail "an aluminium ingot from an electric furnace given crushed bauxite (slot: ${aluminium_smelted:-none})"
 fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then

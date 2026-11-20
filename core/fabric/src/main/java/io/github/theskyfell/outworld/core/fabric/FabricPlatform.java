@@ -11,6 +11,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
+import net.fabricmc.fabric.api.biome.v1.BiomeModifications;
+import net.fabricmc.fabric.api.biome.v1.BiomeSelectors;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
@@ -43,6 +45,8 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import net.minecraft.world.level.levelgen.GenerationStep;
+import net.minecraft.world.level.levelgen.placement.PlacedFeature;
 import net.minecraft.world.level.material.Fluid;
 import team.reborn.energy.api.EnergyStorage;
 
@@ -124,6 +128,11 @@ public final class FabricPlatform implements Platform {
     @Override
     public Fluid createFluid(ResourceKey<Fluid> key, int color) {
         return OutworldFluid.plain(color);
+    }
+
+    @Override
+    public void addOverworldFeature(GenerationStep.Decoration step, ResourceKey<PlacedFeature> feature) {
+        BiomeModifications.addFeature(BiomeSelectors.foundInOverworld(), step, feature);
     }
 
     @Override

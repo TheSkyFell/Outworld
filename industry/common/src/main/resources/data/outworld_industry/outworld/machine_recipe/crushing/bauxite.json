@@ -1,0 +1,23 @@
+{
+  "machine": "outworld_industry:crusher",
+  "items": [
+    {
+      "item": [
+        "outworld_industry:raw_bauxite",
+        "outworld_industry:bauxite_ore"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:crushed_bauxite",
+      "count": 2
+    },
+    {
+      "item": "minecraft:gravel",
+      "chance": 0.1
+    }
+  ],
+  "time": 100,
+  "energy": 20
+}

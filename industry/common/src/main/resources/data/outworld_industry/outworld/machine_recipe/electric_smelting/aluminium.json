@@ -1,0 +1,18 @@
+{
+  "machine": "outworld_industry:electric_furnace",
+  "items": [
+    {
+      "item": [
+        "outworld_industry:crushed_bauxite",
+        "outworld_industry:purified_bauxite"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:aluminium_ingot"
+    }
+  ],
+  "time": 160,
+  "energy": 40
+}
