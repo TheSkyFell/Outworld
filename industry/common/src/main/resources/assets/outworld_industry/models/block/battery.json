@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "end": "outworld_industry:block/battery_top",
-    "side": "outworld_industry:block/battery_side"
-  }
-}

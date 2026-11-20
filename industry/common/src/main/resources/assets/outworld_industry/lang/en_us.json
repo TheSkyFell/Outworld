@@ -1,6 +1,4 @@
 {
-  "block.outworld_industry.battery": "Battery",
-  "block.outworld_industry.boiler": "Boiler",
   "block.outworld_industry.cable": "Cable",
   "block.outworld_industry.combustion_generator": "Combustion Generator",
   "block.outworld_industry.crusher": "Crusher",
@@ -13,7 +11,6 @@
   "block.outworld_industry.gas_tank": "Gas Tank",
   "block.outworld_industry.ore_washer": "Ore Washer",
   "block.outworld_industry.solar_panel": "Solar Panel",
-  "block.outworld_industry.steam_turbine": "Steam Turbine",
   "block.outworld_industry.test_battery": "Test Battery",
   "block.outworld_industry.test_block": "Test Block",
   "block.outworld_industry.test_crate": "Test Crate",
@@ -23,7 +20,6 @@
   "container.outworld_industry.test_block": "Test Block",
   "fluid.outworld_industry.liquid_hydrogen": "Liquid Hydrogen",
   "fluid.outworld_industry.liquid_oxygen": "Liquid Oxygen",
-  "gas.outworld_industry.steam": "Steam",
   "item.outworld_industry.crushed_copper": "Crushed Copper",
   "item.outworld_industry.crushed_gold": "Crushed Gold",
   "item.outworld_industry.crushed_iron": "Crushed Iron",
