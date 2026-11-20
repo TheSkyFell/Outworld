@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.core.platform;
 
 import io.github.theskyfell.outworld.core.energy.EnergyAccess;
+import io.github.theskyfell.outworld.core.fluid.FluidAccess;
+import io.github.theskyfell.outworld.core.item.ItemAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
@@ -53,4 +55,10 @@ public interface Platform {
 
     /** The energy storage at {@code pos} as seen from {@code side}, from any mod, or null. */
     EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side);
+
+    /** The item storage at {@code pos} as seen from {@code side}, from any mod or vanilla, or null. */
+    ItemAccess findItems(ServerLevel level, BlockPos pos, Direction side);
+
+    /** The fluid storage at {@code pos} as seen from {@code side}, from any mod or vanilla, or null. */
+    FluidAccess findFluids(ServerLevel level, BlockPos pos, Direction side);
 }

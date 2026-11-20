@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.core.fabric;
 
 import io.github.theskyfell.outworld.core.energy.EnergyAccess;
+import io.github.theskyfell.outworld.core.fluid.FluidAccess;
+import io.github.theskyfell.outworld.core.item.ItemAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
@@ -11,6 +13,11 @@ import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
 import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidVariant;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemVariant;
+import net.fabricmc.fabric.api.transfer.v1.storage.Storage;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -105,5 +112,17 @@ public final class FabricPlatform implements Platform {
     public EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side) {
         EnergyStorage storage = EnergyStorage.SIDED.find(level, pos, side);
         return storage == null ? null : FabricEnergy.access(storage);
+    }
+
+    @Override
+    public ItemAccess findItems(ServerLevel level, BlockPos pos, Direction side) {
+        Storage<ItemVariant> storage = ItemStorage.SIDED.find(level, pos, side);
+        return storage == null ? null : FabricItems.access(storage);
+    }
+
+    @Override
+    public FluidAccess findFluids(ServerLevel level, BlockPos pos, Direction side) {
+        Storage<FluidVariant> storage = FluidStorage.SIDED.find(level, pos, side);
+        return storage == null ? null : FabricFluids.access(storage);
     }
 }

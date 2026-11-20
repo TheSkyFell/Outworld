@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.core.neoforge;
 
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
+import io.github.theskyfell.outworld.core.fluid.FluidTank;
+import io.github.theskyfell.outworld.core.item.ItemBuffer;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
@@ -57,10 +59,26 @@ public final class NeoForgeModules {
     /** Exposes Outworld storages as NeoForge capabilities. */
     private record CapabilityTransfers(RegisterCapabilitiesEvent event) implements Transfers {
         @Override
-        public <T extends BlockEntity> void energy(BlockEntityType<T> type, SidedEnergy<T> energy) {
+        public <T extends BlockEntity> void energy(BlockEntityType<T> type, Sided<T, EnergyBuffer> energy) {
             event.registerBlockEntity(Capabilities.Energy.BLOCK, type, (blockEntity, side) -> {
                 EnergyBuffer buffer = energy.get(blockEntity, side);
                 return buffer == null ? null : NeoForgeEnergy.handlerFor(buffer);
+            });
+        }
+
+        @Override
+        public <T extends BlockEntity> void items(BlockEntityType<T> type, Sided<T, ItemBuffer> items) {
+            event.registerBlockEntity(Capabilities.Item.BLOCK, type, (blockEntity, side) -> {
+                ItemBuffer buffer = items.get(blockEntity, side);
+                return buffer == null ? null : NeoForgeItems.handlerFor(buffer, side);
+            });
+        }
+
+        @Override
+        public <T extends BlockEntity> void fluids(BlockEntityType<T> type, Sided<T, FluidTank> fluids) {
+            event.registerBlockEntity(Capabilities.Fluid.BLOCK, type, (blockEntity, side) -> {
+                FluidTank tank = fluids.get(blockEntity, side);
+                return tank == null ? null : NeoForgeFluids.handlerFor(tank);
             });
         }
     }

@@ -8,6 +8,13 @@
 # - energy moves through the loaders' energy APIs: placing a test battery (10,000 FE) next to it wakes
 #   it; it pulls 1,000 FE through the loader lookup and does exactly 100 ticks of work in batches of
 #   4 ticks, then sleeps; the battery is left with 9,000 FE
+# - items move through the loaders' item APIs: in a column at 0 _ 4, a chest of 8 iron ingots sits on
+#   a test crate, over a hopper, over a second crate. The crates pull from above and push below from
+#   common code; the hopper reaches the crates through the loader. All 8 ingots end in the bottom crate.
+# - fluid moves through the loaders' fluid APIs: in a column at 0 _ 8, a full water cauldron sits
+#   under two test tanks, which pull from below and push above. The bucket of water ends in the top
+#   tank, 81,000 droplets, and the cauldron is left empty.
+# - afterwards all five machines are asleep
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -68,6 +75,12 @@ job_machines=""
 done_work=""
 done_machines=""
 battery_energy=""
+crate_count=""
+crate_item=""
+tank_bottom=""
+tank_top=""
+cauldron_empty=""
+final_machines=""
 if [[ "$result" == "done" ]]; then
     version_reply="$(rcon outworld version 2>&1 || true)"
 
@@ -94,6 +107,27 @@ if [[ "$result" == "done" ]]; then
     done_machines="$(rcon outworld machines 2>&1 || true)"
     battery_energy="$(rcon data get block -1 100 0 energy 2>&1 || true)"
 
+    # Items: built bottom-up, so placing the full chest last wakes the top crate.
+    rcon setblock 0 100 4 outworld_industry:test_crate > /dev/null 2>&1 || true
+    rcon setblock 0 101 4 minecraft:hopper > /dev/null 2>&1 || true
+    rcon setblock 0 102 4 outworld_industry:test_crate > /dev/null 2>&1 || true
+    rcon setblock 0 103 4 'minecraft:chest{Items:[{Slot:0b,id:"minecraft:iron_ingot",count:8}]}' > /dev/null 2>&1 || true
+    # Fluid: a full water cauldron under two tanks.
+    rcon setblock 0 99 8 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 0 100 8 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 0 101 8 outworld_industry:test_tank > /dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+        sleep 1
+        crate_count="$(rcon data get block 0 100 4 Items[0].count 2>&1 || true)"
+        tank_top="$(rcon data get block 0 101 8 tank.amount 2>&1 || true)"
+        [[ "$crate_count" == *": 8" && "$tank_top" =~ :\ 81000L?$ ]] && break
+    done
+    sleep 1
+    crate_item="$(rcon data get block 0 100 4 Items[0].id 2>&1 || true)"
+    tank_bottom="$(rcon data get block 0 100 8 tank.amount 2>&1 || true)"
+    cauldron_empty="$(rcon execute if block 0 99 8 minecraft:cauldron 2>&1 || true)"
+    final_machines="$(rcon outworld machines 2>&1 || true)"
+
     rcon stop > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
         kill -0 "$gradle_pid" 2>/dev/null || break
@@ -115,9 +149,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 2 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 2 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 2 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 4 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 4 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 4 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
@@ -155,6 +189,22 @@ else
     fail "battery left with 9000 FE (battery: ${battery_energy:-none})"
 fi
 
+if [[ "$crate_count" == *": 8" && "$crate_item" == *"iron_ingot"* ]]; then
+    pass "8 iron ingots moved chest > crate > hopper > crate through the loader's item API"
+else
+    fail "8 iron ingots in the bottom crate (count: ${crate_count:-none}; item: ${crate_item:-none})"
+fi
+if [[ "$tank_top" =~ :\ 81000L?$ && "$tank_bottom" =~ :\ 0L?$ && "$cauldron_empty" == *"passed"* ]]; then
+    pass "a bucket of water moved cauldron > tank > tank through the loader's fluid API"
+else
+    fail "81,000 droplets in the top tank, bottom tank and cauldron empty (top: ${tank_top:-none}; bottom: ${tank_bottom:-none}; cauldron: ${cauldron_empty:-none})"
+fi
+if [[ "$final_machines" == *"5 loaded, 0 awake"* ]]; then
+    pass "all machines asleep once nothing moves (${final_machines})"
+else
+    fail "5 machines loaded, all asleep (machines: ${final_machines:-none})"
+fi
+
 config="$run_dir/config/outworld/core.json"
 if grep -q '"workIntervalTicks"' "$config" 2>/dev/null; then
     pass "config file written: $config"
@@ -174,6 +224,9 @@ fi
     echo "Machines with a job but no energy: ${starved_machines:-none} | work: ${starved_work:-none}"
     echo "Machines after the battery was placed: ${job_machines:-none}"
     echo "Machines after the job: ${done_machines:-none} | work: ${done_work:-none} | battery: ${battery_energy:-none}"
+    echo "Items: bottom crate count ${crate_count:-none}, item ${crate_item:-none}"
+    echo "Fluid: top tank ${tank_top:-none} | bottom tank ${tank_bottom:-none} | cauldron empty: ${cauldron_empty:-none}"
+    echo "Machines at the end: ${final_machines:-none}"
 } >> "$log"
 
 echo

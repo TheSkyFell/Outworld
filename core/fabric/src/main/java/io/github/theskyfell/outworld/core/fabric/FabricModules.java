@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.core.fabric;
 
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
+import io.github.theskyfell.outworld.core.fluid.FluidTank;
+import io.github.theskyfell.outworld.core.item.ItemBuffer;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
@@ -8,6 +10,8 @@ import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
+import net.fabricmc.fabric.api.transfer.v1.item.ItemStorage;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -47,10 +51,26 @@ public final class FabricModules {
     /** Exposes Outworld storages through Fabric's block API lookups. */
     private static final class LookupTransfers implements Transfers {
         @Override
-        public <T extends BlockEntity> void energy(BlockEntityType<T> type, SidedEnergy<T> energy) {
+        public <T extends BlockEntity> void energy(BlockEntityType<T> type, Sided<T, EnergyBuffer> energy) {
             EnergyStorage.SIDED.registerForBlockEntity((blockEntity, side) -> {
                 EnergyBuffer buffer = energy.get(blockEntity, side);
                 return buffer == null ? null : FabricEnergy.storageFor(buffer);
+            }, type);
+        }
+
+        @Override
+        public <T extends BlockEntity> void items(BlockEntityType<T> type, Sided<T, ItemBuffer> items) {
+            ItemStorage.SIDED.registerForBlockEntity((blockEntity, side) -> {
+                ItemBuffer buffer = items.get(blockEntity, side);
+                return buffer == null ? null : FabricItems.storageFor(buffer, side);
+            }, type);
+        }
+
+        @Override
+        public <T extends BlockEntity> void fluids(BlockEntityType<T> type, Sided<T, FluidTank> fluids) {
+            FluidStorage.SIDED.registerForBlockEntity((blockEntity, side) -> {
+                FluidTank tank = fluids.get(blockEntity, side);
+                return tank == null ? null : FabricFluids.storageFor(tank);
             }, type);
         }
     }

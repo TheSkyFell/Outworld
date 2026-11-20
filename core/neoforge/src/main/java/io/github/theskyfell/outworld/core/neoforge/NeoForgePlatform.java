@@ -1,6 +1,8 @@
 package io.github.theskyfell.outworld.core.neoforge;
 
 import io.github.theskyfell.outworld.core.energy.EnergyAccess;
+import io.github.theskyfell.outworld.core.fluid.FluidAccess;
+import io.github.theskyfell.outworld.core.item.ItemAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
@@ -27,7 +29,10 @@ import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.transfer.ResourceHandler;
 import net.neoforged.neoforge.transfer.energy.EnergyHandler;
+import net.neoforged.neoforge.transfer.fluid.FluidResource;
+import net.neoforged.neoforge.transfer.item.ItemResource;
 
 public final class NeoForgePlatform implements Platform {
     @Override
@@ -86,5 +91,17 @@ public final class NeoForgePlatform implements Platform {
     public EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side) {
         EnergyHandler handler = level.getCapability(Capabilities.Energy.BLOCK, pos, side);
         return handler == null ? null : NeoForgeEnergy.access(handler);
+    }
+
+    @Override
+    public ItemAccess findItems(ServerLevel level, BlockPos pos, Direction side) {
+        ResourceHandler<ItemResource> handler = level.getCapability(Capabilities.Item.BLOCK, pos, side);
+        return handler == null ? null : NeoForgeItems.access(handler);
+    }
+
+    @Override
+    public FluidAccess findFluids(ServerLevel level, BlockPos pos, Direction side) {
+        ResourceHandler<FluidResource> handler = level.getCapability(Capabilities.Fluid.BLOCK, pos, side);
+        return handler == null ? null : NeoForgeFluids.access(handler);
     }
 }
