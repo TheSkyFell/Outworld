@@ -1,0 +1,32 @@
+// A module's "common" project: code that only uses vanilla Minecraft. It is never shipped on its own;
+// each loader project compiles these sources and resources into its own jar.
+plugins {
+    id 'outworld-base'
+}
+
+configurations {
+    commonJava {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+    commonResources {
+        canBeResolved = false
+        canBeConsumed = true
+    }
+}
+
+artifacts {
+    commonJava sourceSets.main.java.sourceDirectories.singleFile
+    commonResources sourceSets.main.resources.sourceDirectories.singleFile
+}
+
+// Mark this project's variants as "common" (the mcgradleconventions loader attribute), so loader
+// projects and other modules resolve the right variant.
+def loaderAttribute = Attribute.of('io.github.mcgradleconventions.loader', String)
+def markedConfigurations = ['apiElements', 'runtimeElements', 'sourcesElements',
+                            'compileClasspath', 'runtimeClasspath', 'testCompileClasspath', 'testRuntimeClasspath']
+configurations.matching { it.name in markedConfigurations }.configureEach {
+    attributes {
+        attribute(loaderAttribute, 'common')
+    }
+}

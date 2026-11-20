@@ -1,0 +1,14 @@
+plugins {
+    id 'outworld-common'
+    id 'net.neoforged.moddev'
+}
+
+// Compiles against plain vanilla Minecraft (no loader), so this code can only use vanilla APIs.
+neoForge {
+    neoFormVersion = neo_form_version
+}
+
+dependencies {
+    // Feature mods build on Core's common API and never on another feature mod.
+    compileOnly(project(':core-common'))
+}
