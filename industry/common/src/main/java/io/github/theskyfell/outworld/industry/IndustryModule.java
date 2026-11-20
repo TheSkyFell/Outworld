@@ -38,6 +38,13 @@ public final class IndustryModule implements OutworldModule {
         transfers.items(IndustryContent.TEST_CRATE.get(), (crate, side) -> crate.items());
         transfers.energy(IndustryContent.CRUSHER.get(), (crusher, side) -> crusher.energy());
         transfers.items(IndustryContent.CRUSHER.get(), (crusher, side) -> crusher.items());
+        transfers.energy(IndustryContent.ELECTRIC_FURNACE.get(), (furnace, side) -> furnace.energy());
+        transfers.items(IndustryContent.ELECTRIC_FURNACE.get(), (furnace, side) -> furnace.items());
+        transfers.energy(IndustryContent.ORE_WASHER.get(), (washer, side) -> washer.energy());
+        transfers.items(IndustryContent.ORE_WASHER.get(), (washer, side) -> washer.items());
+        transfers.fluids(IndustryContent.ORE_WASHER.get(), (washer, side) -> washer.exposedFluidTank(side));
+        transfers.energy(IndustryContent.ELECTROLYZER.get(), (electrolyzer, side) -> electrolyzer.energy());
+        transfers.fluids(IndustryContent.ELECTROLYZER.get(), (electrolyzer, side) -> electrolyzer.exposedFluidTank(side));
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));

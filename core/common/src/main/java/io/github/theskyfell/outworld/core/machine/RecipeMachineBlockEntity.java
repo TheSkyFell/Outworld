@@ -25,7 +25,6 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.Containers;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.Fluid;
@@ -253,7 +252,12 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return true;
     }
 
-    private MachineRecipe findRecipe(Level level) {
+    /**
+     * The recipe to run for the current contents, or null. By default the first data recipe for this
+     * machine that matches; machines can add recipes from elsewhere (the electric furnace adds vanilla
+     * smelting). Called only when the contents changed and the current recipe no longer matches.
+     */
+    protected MachineRecipe findRecipe(ServerLevel level) {
         for (MachineRecipe candidate : MachineRecipes.forMachine(level, layout.machine())) {
             if (matches(candidate)) {
                 return candidate;
