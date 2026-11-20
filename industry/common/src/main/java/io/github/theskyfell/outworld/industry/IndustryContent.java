@@ -6,9 +6,13 @@ import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlock;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlockEntity;
+import io.github.theskyfell.outworld.industry.test.TestCrateBlock;
+import io.github.theskyfell.outworld.industry.test.TestCrateBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestMachineBlock;
 import io.github.theskyfell.outworld.industry.test.TestMachineBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestMachineMenu;
+import io.github.theskyfell.outworld.industry.test.TestTankBlock;
+import io.github.theskyfell.outworld.industry.test.TestTankBlockEntity;
 import java.util.List;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
@@ -44,11 +48,31 @@ public final class IndustryContent {
     public static final RegistryEntry<Item, BlockItem> TEST_BATTERY_ITEM = ITEMS.register("test_battery",
             key -> new BlockItem(TEST_BATTERY_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
+    /** Temporary: three item slots that move items downwards, for testing the loaders' item APIs. */
+    public static final RegistryEntry<Block, TestCrateBlock> TEST_CRATE_BLOCK = BLOCKS.register("test_crate",
+            key -> new TestCrateBlock(BlockBehaviour.Properties.of().setId(key).strength(2.0F).sound(SoundType.WOOD)));
+
+    public static final RegistryEntry<Item, BlockItem> TEST_CRATE_ITEM = ITEMS.register("test_crate",
+            key -> new BlockItem(TEST_CRATE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    /** Temporary: a four-bucket tank that moves fluid upwards, for testing the loaders' fluid APIs. */
+    public static final RegistryEntry<Block, TestTankBlock> TEST_TANK_BLOCK = BLOCKS.register("test_tank",
+            key -> new TestTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL)));
+
+    public static final RegistryEntry<Item, BlockItem> TEST_TANK_ITEM = ITEMS.register("test_tank",
+            key -> new BlockItem(TEST_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestMachineBlockEntity>> TEST_MACHINE = BLOCK_ENTITIES.register("test_block",
             key -> BlockEntityTypes.create(TestMachineBlockEntity::new, TEST_BLOCK.get()));
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestBatteryBlockEntity>> TEST_BATTERY = BLOCK_ENTITIES.register("test_battery",
             key -> BlockEntityTypes.create(TestBatteryBlockEntity::new, TEST_BATTERY_BLOCK.get()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestCrateBlockEntity>> TEST_CRATE = BLOCK_ENTITIES.register("test_crate",
+            key -> BlockEntityTypes.create(TestCrateBlockEntity::new, TEST_CRATE_BLOCK.get()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestTankBlockEntity>> TEST_TANK = BLOCK_ENTITIES.register("test_tank",
+            key -> BlockEntityTypes.create(TestTankBlockEntity::new, TEST_TANK_BLOCK.get()));
 
     public static final RegistryEntry<MenuType<?>, MenuType<TestMachineMenu>> TEST_MACHINE_MENU = MENUS.register("test_machine",
             key -> Menus.createType(TestMachineMenu::new, BlockPos.STREAM_CODEC));

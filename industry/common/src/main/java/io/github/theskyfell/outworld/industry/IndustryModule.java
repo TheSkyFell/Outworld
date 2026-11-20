@@ -32,6 +32,8 @@ public final class IndustryModule implements OutworldModule {
     public void registerTransfers(Transfers transfers) {
         transfers.energy(IndustryContent.TEST_MACHINE.get(), (machine, side) -> machine.energy());
         transfers.energy(IndustryContent.TEST_BATTERY.get(), (battery, side) -> battery.energy());
+        transfers.items(IndustryContent.TEST_CRATE.get(), (crate, side) -> crate.items());
+        transfers.fluids(IndustryContent.TEST_TANK.get(), (tank, side) -> tank.tank());
     }
 
     @Override
