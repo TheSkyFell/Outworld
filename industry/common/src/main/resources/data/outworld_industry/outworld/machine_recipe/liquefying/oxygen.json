@@ -1,0 +1,17 @@
+{
+  "machine": "outworld_industry:gas_liquefier",
+  "gases": [
+    {
+      "gas": "outworld:oxygen",
+      "amount": 1000
+    }
+  ],
+  "fluid_results": [
+    {
+      "fluid": "outworld_industry:liquid_oxygen",
+      "amount": 100
+    }
+  ],
+  "time": 40,
+  "energy": 60
+}
