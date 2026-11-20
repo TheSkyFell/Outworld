@@ -55,6 +55,7 @@ public final class IndustryModule implements OutworldModule {
         transfers.energy(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.energy());
         transfers.fluids(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.exposedFluidTank(side));
         transfers.items(IndustryContent.BELT.get(), (belt, side) -> belt.entry());
+        transfers.energy(IndustryContent.INSERTER.get(), (inserter, side) -> inserter.energy());
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));

@@ -53,6 +53,8 @@
 # - belts: items dropped into a belt's entry slots ride east, round a curve and south into a chest at
 #   3 120 3, both lanes; a belt feeding into the side of a straight belt at 6 120 4 loads its items onto
 #   the line, which ends in a chest at 8 120 5
+# - inserters: one takes 4 iron from a chest at 1 125 8 and puts them on a belt that runs into a chest at
+#   3 125 10; another takes 2 raw iron off the end of a belt at 7 125 8 and feeds a crusher at 7 125 10
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -169,6 +171,9 @@ belt_iron=""
 belt_gold=""
 sideload_copper=""
 belt_state=""
+inserted_iron=""
+inserted_crushed=""
+inserter_state=""
 belts_stress_start=""
 belts_stress_status=""
 gas_bottom=""
@@ -409,6 +414,27 @@ if [[ "$result" == "done" ]]; then
     done
     belt_state="curve: $(rcon data get block 3 120 1 2>&1 | cut -c1-300 || true) | side-loaded belt: $(rcon data get block 6 120 5 2>&1 | cut -c1-300 || true)"
 
+    # Inserters: chest > inserter > belt > chest, and belt > inserter > crusher. Each inserter sits on a
+    # creative battery.
+    rcon setblock 1 125 8 'minecraft:chest{Items:[{Slot:0b,id:"minecraft:iron_ingot",count:4}]}' > /dev/null 2>&1 || true
+    rcon setblock 3 125 10 minecraft:chest > /dev/null 2>&1 || true
+    rcon fill 3 125 8 3 125 9 'outworld_industry:belt[facing=south]' > /dev/null 2>&1 || true
+    rcon setblock 2 124 8 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 2 125 8 'outworld_industry:inserter[facing=east]' > /dev/null 2>&1 || true
+    rcon setblock 7 124 10 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 7 125 10 outworld_industry:crusher > /dev/null 2>&1 || true
+    rcon setblock 7 124 9 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 7 125 9 'outworld_industry:inserter[facing=south]' > /dev/null 2>&1 || true
+    rcon setblock 7 125 8 'outworld_industry:belt[facing=east]' > /dev/null 2>&1 || true
+    rcon setblock 6 125 8 'outworld_industry:belt[facing=east]{Items:[{Slot:0b,id:"minecraft:raw_iron",count:2}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+        sleep 1
+        inserted_iron="$(rcon data get block 3 125 10 'Items[{id:"minecraft:iron_ingot"}].count' 2>&1 || true)"
+        inserted_crushed="$(rcon data get block 7 125 10 'Items[{Slot:1b}]' 2>&1 || true)"
+        [[ "$inserted_iron" =~ :\ 4$ && "$inserted_crushed" == *"crushed_iron"* && "$inserted_crushed" == *"count: 4"* ]] && break
+    done
+    inserter_state="chest inserter: $(rcon data get block 2 125 8 2>&1 | cut -c1-250 || true) | belt inserter: $(rcon data get block 7 125 9 2>&1 | cut -c1-250 || true) | crusher: $(rcon data get block 7 125 10 Items 2>&1 | cut -c1-250 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -448,9 +474,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 27 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 41 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 16 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 28 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 42 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 17 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
@@ -641,6 +667,16 @@ if [[ "$sideload_copper" =~ :\ 4$ ]]; then
 else
     fail "4 copper side-loaded onto the line and delivered to its chest (copper: ${sideload_copper:-none})"
 fi
+if [[ "$inserted_iron" =~ :\ 4$ ]]; then
+    pass "an inserter moved 4 iron from a chest onto a belt, which delivered them to a chest"
+else
+    fail "4 iron in the chest after chest > inserter > belt (iron: ${inserted_iron:-none})"
+fi
+if [[ "$inserted_crushed" == *"crushed_iron"* && "$inserted_crushed" == *"count: 4"* ]]; then
+    pass "an inserter took raw iron off a belt and fed a crusher (4 crushed iron)"
+else
+    fail "4 crushed iron from a crusher fed by an inserter from a belt (slot: ${inserted_crushed:-none})"
+fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
     pass "fluid and gas grid contents were saved with the world (${saved_grids})"
@@ -748,6 +784,7 @@ fi
     echo "Belts stress test start: ${belts_stress_start:-none}"
     echo "Belts stress test result: ${belts_stress_status:-none}"
     echo "Belts: ${belt_state:-none}"
+    echo "Inserters: ${inserter_state:-none}"
     echo "/outworld perf while the test machine worked:"
     echo "${perf_reply:-none}"
 } >> "$log"
