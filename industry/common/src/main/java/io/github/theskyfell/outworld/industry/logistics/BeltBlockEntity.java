@@ -182,6 +182,12 @@ public final class BeltBlockEntity extends MachineBlockEntity {
                     position = BeltLane.LENGTH / 2;
                 }
             }
+            if (nextLane == lane) {
+                // Carrying on along the same lane: if the next belt hasn't moved its items yet this
+                // batch, its last item may be in the way; join the line right behind it rather than
+                // wait a whole batch at the end of this belt.
+                position = Math.min(position, next.lane(nextLane).tailRoom());
+            }
             taken = next.receive(nextLane, item, position);
         } else {
             ItemAccess target = ItemTransfer.find(level, front, facing.getOpposite());
