@@ -1,6 +1,6 @@
 package io.github.theskyfell.outworld.core.mixin;
 
-import io.github.theskyfell.outworld.core.energy.EnergyGrids;
+import io.github.theskyfell.outworld.core.grid.Grids;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Reports every block change in a loaded chunk on the server to {@link MultiblockTracker} and
- * {@link EnergyGrids}. Neither loader has an event for all block changes (commands, explosions and
+ * {@link Grids} (cables, pipes and tanks). Neither loader has an event for all block changes (commands, explosions and
  * pistons included), so this is the one place Core hooks Minecraft directly.
  */
 @Mixin(LevelChunk.class)
@@ -31,7 +31,7 @@ abstract class LevelChunkMixin {
         BlockState previous = callback.getReturnValue();
         if (previous != null && level instanceof ServerLevel serverLevel) {
             MultiblockTracker.blockChanged(serverLevel, pos);
-            EnergyGrids.blockChanged(serverLevel, pos, previous, state);
+            Grids.blockChanged(serverLevel, pos, previous, state);
         }
     }
 }

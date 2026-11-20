@@ -243,8 +243,55 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return waiting;
     }
 
+    /**
+     * Draws fluid and gas that this machine's recipes use from neighbouring storage (pipes, tanks,
+     * other machines' outputs) into input tanks with room.
+     *
+     * @return true if anything came in
+     */
+    private boolean pullInputs(ServerLevel level) {
+        if (fluidInputs.isEmpty() && gasInputs.isEmpty()) {
+            return false;
+        }
+        List<MachineRecipe> recipes = MachineRecipes.forMachine(level, layout.machine());
+        boolean pulled = false;
+        for (Direction direction : Direction.values()) {
+            BlockPos neighbour = worldPosition.relative(direction);
+            if (!fluidInputs.isEmpty()) {
+                FluidAccess source = FluidTransfer.find(level, neighbour, direction.getOpposite());
+                if (source != null) {
+                    for (FluidTank tank : fluidInputs) {
+                        long room = tank.getCapacity() - tank.getAmount();
+                        if (room > 0) {
+                            Predicate<Fluid> wanted = fluid -> (tank.isEmpty() || tank.getContents().fluid() == fluid)
+                                    && recipes.stream().anyMatch(recipe -> recipe.fluids().stream()
+                                            .anyMatch(input -> input.fluid().contains(fluid.builtInRegistryHolder())));
+                            pulled |= FluidTransfer.move(source, tank, wanted, room) > 0;
+                        }
+                    }
+                }
+            }
+            if (!gasInputs.isEmpty()) {
+                GasAccess source = GasTransfer.find(level, neighbour, direction.getOpposite());
+                if (source != null) {
+                    for (GasTank tank : gasInputs) {
+                        long room = tank.getCapacity() - tank.getAmount();
+                        if (room > 0) {
+                            Predicate<ResourceKey<Gas>> wanted = gas -> (tank.isEmpty() || tank.getContents().is(gas))
+                                    && recipes.stream().anyMatch(recipe -> recipe.gases().stream()
+                                            .anyMatch(input -> input.gas().equals(gas)));
+                            pulled |= GasTransfer.move(source, tank, wanted, room) > 0;
+                        }
+                    }
+                }
+            }
+        }
+        return pulled;
+    }
+
     private boolean runRecipes(ServerLevel level, int elapsedTicks) {
         int ticks = elapsedTicks;
+        boolean pulled = false;
         while (ticks > 0) {
             if (recipeCheckNeeded || recipe == null) {
                 recipeCheckNeeded = false;
@@ -260,6 +307,14 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
                         progress = Math.min(progress, recipe.time() - 1);
                     }
                     setChanged();
+                }
+            }
+            if (recipe == null && !pulled) {
+                // Short of something: draw the fluid and gas recipes use from pipes and tanks next door.
+                pulled = true;
+                if (pullInputs(level)) {
+                    recipeCheckNeeded = true;
+                    continue;
                 }
             }
             if (recipe == null || !outputsFit(recipe)) {

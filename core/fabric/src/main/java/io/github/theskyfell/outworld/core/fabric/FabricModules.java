@@ -81,6 +81,14 @@ public final class FabricModules {
         }
 
         @Override
+        public void blockFluids(AtBlock<FluidTank> fluids, Block... blocks) {
+            FluidStorage.SIDED.registerForBlocks((level, pos, state, blockEntity, side) -> {
+                FluidTank tank = level instanceof ServerLevel serverLevel ? fluids.get(serverLevel, pos, side) : null;
+                return tank == null ? null : FabricFluids.storageFor(tank);
+            }, blocks);
+        }
+
+        @Override
         public <T extends BlockEntity> void items(BlockEntityType<T> type, Sided<T, ItemBuffer> items) {
             ItemStorage.SIDED.registerForBlockEntity((blockEntity, side) -> {
                 ItemBuffer buffer = items.get(blockEntity, side);
