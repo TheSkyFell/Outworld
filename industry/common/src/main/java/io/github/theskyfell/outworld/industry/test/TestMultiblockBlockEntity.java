@@ -28,7 +28,7 @@ public final class TestMultiblockBlockEntity extends MultiblockControllerBlockEn
     }
 
     @Override
-    protected ResourceKey<MultiblockStructure> structureKey() {
+    public ResourceKey<MultiblockStructure> structureKey() {
         return STRUCTURE;
     }
 

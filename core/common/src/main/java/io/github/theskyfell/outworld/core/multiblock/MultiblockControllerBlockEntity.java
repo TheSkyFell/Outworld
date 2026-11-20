@@ -43,7 +43,7 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
     }
 
     /** The structure this controller forms, from the {@link MultiblockStructure#REGISTRY} data registry. */
-    protected abstract ResourceKey<MultiblockStructure> structureKey();
+    public abstract ResourceKey<MultiblockStructure> structureKey();
 
     /**
      * Does {@code elapsedTicks} ticks of work while the structure is complete. Same contract as
