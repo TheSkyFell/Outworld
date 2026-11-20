@@ -17,6 +17,9 @@
   "entrypoints": {
     "main": [
       "io.github.theskyfell.outworld.core.fabric.OutworldCoreFabric"
+    ],
+    "client": [
+      "io.github.theskyfell.outworld.core.fabric.client.OutworldCoreFabricClient"
     ]
   },
   "depends": {

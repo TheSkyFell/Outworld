@@ -14,8 +14,8 @@ needs only Outworld Core, so you can install just the parts you want.
 
 | Mod | Id | Status |
 |---|---|---|
-| Outworld Core | `outworld` | Started: loader layer and registration |
-| Outworld Industry | `outworld_industry` | Started: one temporary test block |
+| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens) and `/outworld version` |
+| Outworld Industry | `outworld_industry` | Started: one temporary test block that opens a screen and pings the server |
 | Outworld Habitats | | Planned |
 | Outworld Logistics | | Planned |
 | Outworld Worlds | | Planned |
@@ -31,8 +31,10 @@ needs only Outworld Core, so you can install just the parts you want.
 ./gradlew build
 ```
 
-You don't need to install Java 25 yourself: Gradle downloads it if it's missing. The mod jars end up
-in `<module>/<loader>/build/libs/`, for example `industry/neoforge/build/libs/`.
+You need a JDK 25 installed, for example Temurin 25 from [adoptium.net](https://adoptium.net). Gradle
+finds it on its own, even if another Java is your default. The mod jars end up in
+`<module>/<loader>/build/libs/`, for example `industry/neoforge/build/libs/`. The first build takes
+several minutes because it downloads and sets up Minecraft.
 
 To start the game with Core and Industry loaded:
 
@@ -58,9 +60,24 @@ build-logic/  Gradle conventions shared by every project.
 ```
 
 Each loader project compiles its mod's common code into its own jar, so every jar is a complete mod.
-Common code reaches the loader only through Core's platform interfaces
-(`io.github.theskyfell.outworld.core.platform`), and feature mods talk to each other only through
+Common code reaches the loader only through Core, and feature mods talk to each other only through
 Core.
+
+Each mod's common code provides an `OutworldModule`, which lists what it registers, its network
+payloads and its startup code. Mods with client-only parts (screens, handlers for payloads from the
+server) also provide an `OutworldClientModule`. Each loader entry point is then one line: it hands the
+module to Core, which registers everything at the moment that loader allows. See
+`industry/fabric` and `industry/neoforge` for the whole of it.
+
+Core gives common code:
+
+| Need | Use |
+|---|---|
+| Register blocks, items, menus | `Registrar` (`core.registry`) |
+| React to server start, ticks, commands | `OutworldEvents` (`core.event`); client: `OutworldClientEvents` |
+| Settings | `ConfigFile` (`core.config`), a JSON file in `config/<mod id>/` |
+| Network messages | `Payloads` in the module, `Network` to send; client: `ClientNetwork` |
+| Menus that carry data to the client | `Menus` (`core.menu`); screens via `OutworldClientModule` |
 
 ## License
 

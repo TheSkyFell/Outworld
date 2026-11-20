@@ -9,6 +9,12 @@ on:
 permissions:
   contents: read
 
+# An explicit bash shell runs steps with pipefail, so a failed command piped into tee still fails
+# the step. GitHub's implicit default shell does not.
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     name: Build (NeoForge + Fabric)
@@ -31,7 +37,7 @@ jobs:
       - name: Build
         run: |
           .github/scripts/check-repositories.sh 2>&1 | tee build.log
-          ./gradlew build --stacktrace 2>&1 | tee -a build.log
+          ./gradlew build --continue --stacktrace 2>&1 | tee -a build.log
 
       - name: Upload mod jars
         uses: actions/upload-artifact@v7
