@@ -48,6 +48,14 @@ public final class BeltLane {
         return positions[index];
     }
 
+    /**
+     * The furthest along a new item can go behind every item on the lane: {@link #LENGTH} on an empty
+     * lane, negative if the last item is too close to the start for another behind it.
+     */
+    public int tailRoom() {
+        return size == 0 ? LENGTH : positions[size - 1] - SPACING;
+    }
+
     /** Whether an item fits at {@code position} without coming closer than {@link #SPACING} to another. */
     public boolean canInsert(int position) {
         return size < CAPACITY && position >= 0 && position <= LENGTH && slotFor(position) >= 0;
