@@ -7,11 +7,14 @@ import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.function.Supplier;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -19,7 +22,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
+import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -80,6 +86,15 @@ public final class NeoForgePlatform implements Platform {
     @Override
     public void sendToPlayersTracking(ServerLevel level, BlockPos pos, CustomPacketPayload payload) {
         PacketDistributor.sendToPlayersTrackingChunk(level, ChunkPos.containing(pos), payload);
+    }
+
+    @Override
+    public CreativeModeTab createCreativeTab(Component title, Supplier<ItemStack> icon, Supplier<List<? extends ItemLike>> items) {
+        return CreativeModeTab.builder()
+                .title(title)
+                .icon(icon)
+                .displayItems((parameters, output) -> items.get().forEach(output::accept))
+                .build();
     }
 
     @Override
