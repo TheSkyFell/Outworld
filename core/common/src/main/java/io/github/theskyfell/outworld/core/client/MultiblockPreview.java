@@ -1,6 +1,6 @@
 package io.github.theskyfell.outworld.core.client;
 
-import io.github.theskyfell.outworld.core.multiblock.MultiblockControllerBlockEntity;
+import io.github.theskyfell.outworld.core.multiblock.MultiblockController;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -106,15 +106,15 @@ public final class MultiblockPreview {
             return false;
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
-        if (!(blockEntity instanceof MultiblockControllerBlockEntity controller)) {
+        if (!(blockEntity instanceof MultiblockController controller)) {
             return false;
         }
-        MultiblockStructure structure = controller.structure(level);
+        MultiblockStructure structure = controller.multiblock().structure(level);
         if (structure == null) {
             return false;
         }
 
-        Direction facing = controller.facing();
+        Direction facing = controller.multiblock().facing();
         List<Problem> problems = new ArrayList<>();
         for (MultiblockStructure.Entry entry : structure.entries()) {
             BlockPos at = MultiblockStructure.place(entry, pos, facing);

@@ -1,0 +1,22 @@
+{
+  "machine": "outworld_industry:arc_furnace",
+  "items": [
+    {
+      "item": "minecraft:iron_ingot",
+      "count": 2
+    },
+    {
+      "item": [
+        "minecraft:coal",
+        "minecraft:charcoal"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:steel_ingot"
+    }
+  ],
+  "time": 160,
+  "energy": 120
+}

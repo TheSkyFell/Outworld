@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "outworld_industry:block/refractory_bricks",
+    "front": "outworld_industry:block/arc_furnace_front",
+    "side": "outworld_industry:block/refractory_bricks"
+  }
+}

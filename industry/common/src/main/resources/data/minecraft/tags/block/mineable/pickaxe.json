@@ -1,5 +1,7 @@
 {
   "values": [
+    "outworld_industry:refractory_bricks",
+    "outworld_industry:arc_furnace",
     "outworld_industry:inserter",
     "outworld_industry:belt",
     "outworld_industry:titanium_block",

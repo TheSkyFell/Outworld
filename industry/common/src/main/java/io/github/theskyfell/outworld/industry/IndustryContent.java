@@ -10,6 +10,8 @@ import io.github.theskyfell.outworld.industry.logistics.BeltBlock;
 import io.github.theskyfell.outworld.industry.logistics.BeltBlockEntity;
 import io.github.theskyfell.outworld.industry.logistics.InserterBlock;
 import io.github.theskyfell.outworld.industry.logistics.InserterBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.ArcFurnaceBlock;
+import io.github.theskyfell.outworld.industry.machine.ArcFurnaceBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlock;
@@ -108,6 +110,22 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<ElectrolyzerBlockEntity>> ELECTROLYZER = BLOCK_ENTITIES.register("electrolyzer",
             key -> BlockEntityTypes.create(ElectrolyzerBlockEntity::new, ELECTROLYZER_BLOCK.get()));
+
+    public static final RegistryEntry<Block, ArcFurnaceBlock> ARC_FURNACE_BLOCK = BLOCKS.register("arc_furnace",
+            key -> new ArcFurnaceBlock(BlockBehaviour.Properties.of().setId(key).strength(4.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> ARC_FURNACE_ITEM = ITEMS.register("arc_furnace",
+            key -> new BlockItem(ARC_FURNACE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<ArcFurnaceBlockEntity>> ARC_FURNACE = BLOCK_ENTITIES.register("arc_furnace",
+            key -> BlockEntityTypes.create(ArcFurnaceBlockEntity::new, ARC_FURNACE_BLOCK.get()));
+
+    /** The arc furnace's walls. */
+    public static final RegistryEntry<Block, Block> REFRACTORY_BRICKS = BLOCKS.register("refractory_bricks",
+            key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.COLOR_ORANGE).requiresCorrectToolForDrops().strength(2.5F, 8.0F)));
+
+    public static final RegistryEntry<Item, BlockItem> REFRACTORY_BRICKS_ITEM = ITEMS.register("refractory_bricks",
+            key -> new BlockItem(REFRACTORY_BRICKS.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
     // Power
 
@@ -239,7 +257,7 @@ public final class IndustryContent {
             key -> new Item(new Item.Properties().setId(key)));
 
     // Aluminium and titanium: ores, raw ore, the ore chain's crushed and purified forms, ingots and blocks.
-    // Aluminium only smelts in the electric furnace; titanium will need the arc furnace.
+    // Aluminium only smelts in the electric furnace; titanium only in the arc furnace.
 
     public static final RegistryEntry<Block, Block> BAUXITE_ORE = BLOCKS.register("bauxite_ore",
             key -> new Block(BlockBehaviour.Properties.of().setId(key).mapColor(MapColor.STONE).requiresCorrectToolForDrops().strength(3.0F, 3.0F)));
@@ -286,6 +304,8 @@ public final class IndustryContent {
     public static final RegistryEntry<Item, Item> PURIFIED_TITANIUM = ITEMS.register("purified_titanium",
             key -> new Item(new Item.Properties().setId(key)));
     public static final RegistryEntry<Item, Item> TITANIUM_INGOT = ITEMS.register("titanium_ingot",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> STEEL_INGOT = ITEMS.register("steel_ingot",
             key -> new Item(new Item.Properties().setId(key)));
 
     // Temporary test blocks
