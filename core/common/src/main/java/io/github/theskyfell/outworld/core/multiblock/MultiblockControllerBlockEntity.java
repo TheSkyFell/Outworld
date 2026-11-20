@@ -11,10 +11,13 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.storage.ValueOutput;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The block entity of a multiblock's controller. It is a machine: it does its work in
@@ -78,6 +81,45 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
                 : Direction.NORTH;
     }
 
+    /** The structure this controller forms, or null if no such structure is loaded. Works on both sides. */
+    public final MultiblockStructure structure(Level level) {
+        return level.registryAccess().lookupOrThrow(MultiblockStructure.REGISTRY).getValue(structureKey());
+    }
+
+    /**
+     * The empty spot nearest {@code from} where the structure needs {@code block}, or null if there is
+     * none. Spots holding another block don't count: something would have to be broken first.
+     */
+    public BlockPos nextSpotFor(Level level, Block block, Vec3 from) {
+        MultiblockStructure structure = structure(level);
+        if (structure == null) {
+            return null;
+        }
+        BlockState placed = block.defaultBlockState();
+        Direction facing = facing();
+        BlockPos nearest = null;
+        double nearestDistance = Double.MAX_VALUE;
+        for (MultiblockStructure.Entry entry : structure.entries()) {
+            if (!placed.is(entry.part().blocks())) {
+                continue;
+            }
+            BlockPos at = MultiblockStructure.place(entry, worldPosition, facing);
+            if (!level.isLoaded(at)) {
+                continue;
+            }
+            BlockState current = level.getBlockState(at);
+            if (current.is(entry.part().blocks()) || !current.canBeReplaced()) {
+                continue;
+            }
+            double distance = Vec3.atCenterOf(at).distanceToSqr(from);
+            if (distance < nearestDistance) {
+                nearest = at;
+                nearestDistance = distance;
+            }
+        }
+        return nearest;
+    }
+
     /** A one-line status for players: complete, or what is missing where. */
     public Component status() {
         if (unknownStructure) {
@@ -123,7 +165,7 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
     }
 
     private void check(ServerLevel level) {
-        MultiblockStructure structure = level.registryAccess().lookupOrThrow(MultiblockStructure.REGISTRY).getValue(structureKey());
+        MultiblockStructure structure = structure(level);
         if (structure == null) {
             if (WARNED_UNKNOWN.add(structureKey())) {
                 OutworldCore.LOG.warn("No multiblock structure {} is loaded; its controllers can't form", structureKey().identifier());

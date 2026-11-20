@@ -120,8 +120,7 @@ public final class MultiblockPreview {
         if (!(blockEntity instanceof MultiblockControllerBlockEntity controller)) {
             return false;
         }
-        MultiblockStructure structure = level.registryAccess().lookupOrThrow(MultiblockStructure.REGISTRY)
-                .getValue(controller.structureKey());
+        MultiblockStructure structure = controller.structure(level);
         if (structure == null) {
             return false;
         }
