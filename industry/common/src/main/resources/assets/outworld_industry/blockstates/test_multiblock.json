@@ -1,0 +1,8 @@
+{
+  "variants": {
+    "facing=north": { "model": "outworld_industry:block/test_multiblock" },
+    "facing=east": { "model": "outworld_industry:block/test_multiblock", "y": 90 },
+    "facing=south": { "model": "outworld_industry:block/test_multiblock", "y": 180 },
+    "facing=west": { "model": "outworld_industry:block/test_multiblock", "y": 270 }
+  }
+}

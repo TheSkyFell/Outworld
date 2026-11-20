@@ -1,0 +1,8 @@
+{
+  "parent": "minecraft:block/orientable",
+  "textures": {
+    "top": "outworld_industry:block/test_multiblock_side",
+    "front": "outworld_industry:block/test_multiblock_front",
+    "side": "outworld_industry:block/test_multiblock_side"
+  }
+}

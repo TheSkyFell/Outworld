@@ -4,8 +4,11 @@ import io.github.theskyfell.outworld.core.command.OutworldCommand;
 import io.github.theskyfell.outworld.core.config.ConfigFile;
 import io.github.theskyfell.outworld.core.event.OutworldEvents;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
+import io.github.theskyfell.outworld.core.module.DataRegistries;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
+import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
+import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
 import io.github.theskyfell.outworld.core.perf.Perf;
 import io.github.theskyfell.outworld.core.platform.Services;
 
@@ -14,6 +17,11 @@ public final class CoreModule implements OutworldModule {
     @Override
     public String modId() {
         return OutworldCore.MOD_ID;
+    }
+
+    @Override
+    public void registerDataRegistries(DataRegistries registries) {
+        registries.synced(MultiblockStructure.REGISTRY, MultiblockStructure.CODEC);
     }
 
     @Override
@@ -34,6 +42,7 @@ public final class CoreModule implements OutworldModule {
         OutworldEvents.LEVEL_TICK_END.register(MachineScheduler::tick);
         OutworldEvents.SERVER_STOPPING.register(server -> {
             MachineScheduler.clear();
+            MultiblockTracker.clear();
             Perf.clear();
         });
     }

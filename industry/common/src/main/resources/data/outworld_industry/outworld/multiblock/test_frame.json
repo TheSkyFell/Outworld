@@ -1,0 +1,11 @@
+{
+  "pattern": [
+    ["III", "III", "III"],
+    ["I@I", "I_I", "III"],
+    ["III", "III", "III"]
+  ],
+  "key": {
+    "I": "minecraft:iron_block",
+    "_": "#minecraft:air"
+  }
+}
