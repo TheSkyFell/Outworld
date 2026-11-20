@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.core.machine;
 
 import io.github.theskyfell.outworld.core.OutworldCore;
+import io.github.theskyfell.outworld.core.perf.PerfSection;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -35,6 +36,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
     private long scheduledTime = ASLEEP;
     private long lastWorkTime;
     private boolean working;
+    private PerfSection perfSection;
 
     protected MachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -97,6 +99,14 @@ public abstract class MachineBlockEntity extends BlockEntity {
         if (level instanceof ServerLevel serverLevel) {
             onServerThread(serverLevel, () -> MachineScheduler.removeIfPresent(serverLevel, this));
         }
+    }
+
+    /** The section this machine's batches are timed under: one per block entity type. */
+    final PerfSection perfSection() {
+        if (perfSection == null) {
+            perfSection = MachineScheduler.perfSection(getType());
+        }
+        return perfSection;
     }
 
     /** Called by the scheduler when this machine's slot comes up. */

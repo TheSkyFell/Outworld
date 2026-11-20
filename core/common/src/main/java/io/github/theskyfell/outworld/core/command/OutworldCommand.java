@@ -9,7 +9,10 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 
-/** The {@code /outworld} command. Debug and admin tools hang off it as subcommands. */
+/**
+ * The {@code /outworld} command. Debug and admin tools hang off it as subcommands; those that show
+ * server internals need the same permission as {@code /gamemode}.
+ */
 public final class OutworldCommand {
     private OutworldCommand() {
     }
@@ -21,11 +24,20 @@ public final class OutworldCommand {
                     context.getSource().sendSuccess(() -> Component.literal(line), false);
                     return 1;
                 }))
-                .then(Commands.literal("machines").executes(context -> {
-                    String line = describeMachines();
-                    context.getSource().sendSuccess(() -> Component.literal(line), false);
-                    return 1;
-                })));
+                .then(Commands.literal("machines")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> {
+                            String text = describeMachines();
+                            context.getSource().sendSuccess(() -> Component.literal(text), false);
+                            return 1;
+                        }))
+                .then(Commands.literal("perf")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> {
+                            String text = PerfReport.build();
+                            context.getSource().sendSuccess(() -> Component.literal(text), false);
+                            return 1;
+                        })));
     }
 
     /** e.g. "Machines in minecraft:overworld: 12 loaded, 3 awake, 480 work batches since start". */

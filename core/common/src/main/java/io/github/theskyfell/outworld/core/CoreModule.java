@@ -6,6 +6,7 @@ import io.github.theskyfell.outworld.core.event.OutworldEvents;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
+import io.github.theskyfell.outworld.core.perf.Perf;
 import io.github.theskyfell.outworld.core.platform.Services;
 
 /** Outworld Core itself, loaded through the same loader layer as every feature mod. */
@@ -28,7 +29,12 @@ public final class CoreModule implements OutworldModule {
         OutworldEvents.REGISTER_COMMANDS.register((dispatcher, context, selection) -> OutworldCommand.register(dispatcher));
         OutworldEvents.SERVER_STARTED.register(server -> OutworldCore.LOG.info("Outworld is ready: {}", Modules.describe()));
 
+        OutworldEvents.SERVER_TICK_START.register(server -> Perf.tickStarted());
+        OutworldEvents.SERVER_TICK_END.register(server -> Perf.tickEnded());
         OutworldEvents.LEVEL_TICK_END.register(MachineScheduler::tick);
-        OutworldEvents.SERVER_STOPPING.register(server -> MachineScheduler.clear());
+        OutworldEvents.SERVER_STOPPING.register(server -> {
+            MachineScheduler.clear();
+            Perf.clear();
+        });
     }
 }
