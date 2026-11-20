@@ -125,7 +125,9 @@ public final class BeltBlock extends MachineBlock {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (level instanceof ServerLevel && level.getBlockEntity(pos) instanceof BeltBlockEntity belt) {
             for (ItemStack item : belt.takeByHand(hit.getLocation())) {
-                player.getInventory().placeItemBackInInventory(item);
+                if (!player.addItem(item)) {
+                    player.drop(item, false);
+                }
             }
         }
         return InteractionResult.SUCCESS;
