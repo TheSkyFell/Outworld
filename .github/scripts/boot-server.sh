@@ -116,6 +116,7 @@ mb_turned_back=""
 mb_machines=""
 gas_top=""
 crusher_output=""
+crusher_state=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -207,6 +208,7 @@ if [[ "$result" == "done" ]]; then
         crusher_output="$(rcon data get block 8 101 2 'Items[{Slot:1b}]' 2>&1 || true)"
         [[ "$crusher_output" == *"crushed_iron"* && "$crusher_output" == *"count: 6"* ]] && break
     done
+    crusher_state="$(rcon data get block 8 101 2 2>&1 | cut -c1-600 || true)"
 
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
@@ -227,8 +229,9 @@ sleep 2
 kill -KILL -- "-$gradle_pid" 2>/dev/null || true
 
 failures=0
+failed_checks=()
 pass() { echo "  ok:      $1"; }
-fail() { echo "  MISSING: $1"; failures=$((failures + 1)); }
+fail() { echo "  MISSING: $1"; failures=$((failures + 1)); failed_checks+=("$1"); }
 check_log() {
     if grep -q -E "$2" "$log"; then pass "$1"; else fail "$1"; fi
 }
@@ -398,7 +401,11 @@ fi
 
 # Recorded in the log too, so failure reports on pull requests include them.
 {
-    echo "Boot checks: ${failures} failed. /outworld version reply: ${version_reply:-none}"
+    echo "Boot checks: ${failures} failed."
+    for check in "${failed_checks[@]}"; do
+        echo "  MISSING: ${check}"
+    done
+    echo "/outworld version reply: ${version_reply:-none}"
     echo "Machines after placing: ${placed_machines:-none} | work: ${placed_work:-none}"
     echo "Machines with a job but no energy: ${starved_machines:-none} | work: ${starved_work:-none}"
     echo "Machines after the battery was placed: ${job_machines:-none}"
@@ -410,6 +417,7 @@ fi
     echo "Multiblock turned north: ${mb_turned:-none} | back east: ${mb_turned_back:-none} | ${mb_machines:-none}"
     echo "Gas: top tank ${gas_top:-none} | bottom tank ${gas_bottom:-none}"
     echo "Crusher output slot: ${crusher_output:-none}"
+    echo "Crusher: ${crusher_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"
