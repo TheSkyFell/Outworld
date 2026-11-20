@@ -25,4 +25,54 @@ public final class Energy {
         }
         return Services.PLATFORM.findEnergy(level, pos, side);
     }
+
+    /**
+     * Pushes up to {@code maxAmount} FE out of {@code source} into the energy storage on each side of
+     * {@code pos} (cables, machines, batteries), in turn.
+     *
+     * @return how much went out
+     */
+    public static long pushToNeighbours(ServerLevel level, BlockPos pos, EnergyBuffer source, long maxAmount) {
+        long pushed = 0;
+        for (Direction direction : Direction.values()) {
+            long left = Math.min(maxAmount - pushed, source.getAmount());
+            if (left <= 0) {
+                break;
+            }
+            EnergyAccess target = find(level, pos.relative(direction), direction.getOpposite());
+            if (target != null) {
+                long accepted = target.insert(left, false);
+                if (accepted > 0) {
+                    source.setAmount(source.getAmount() - accepted);
+                    pushed += accepted;
+                }
+            }
+        }
+        return pushed;
+    }
+
+    /**
+     * Pulls up to {@code maxAmount} FE into {@code target} from the energy storage on each side of
+     * {@code pos}, in turn, as far as {@code target} has room.
+     *
+     * @return how much came in
+     */
+    public static long pullFromNeighbours(ServerLevel level, BlockPos pos, EnergyBuffer target, long maxAmount) {
+        long pulled = 0;
+        for (Direction direction : Direction.values()) {
+            long room = Math.min(maxAmount - pulled, target.getCapacity() - target.getAmount());
+            if (room <= 0) {
+                break;
+            }
+            EnergyAccess source = find(level, pos.relative(direction), direction.getOpposite());
+            if (source != null) {
+                long taken = source.extract(room, false);
+                if (taken > 0) {
+                    target.setAmount(target.getAmount() + taken);
+                    pulled += taken;
+                }
+            }
+        }
+        return pulled;
+    }
 }

@@ -3,7 +3,10 @@ package io.github.theskyfell.outworld.core.module;
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
 import io.github.theskyfell.outworld.core.item.ItemBuffer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 
@@ -24,6 +27,23 @@ public interface Transfers {
 
     /** Makes a block entity type's fluid tank visible to pipes, buckets and machines from any mod. */
     <T extends BlockEntity> void fluids(BlockEntityType<T> type, Sided<T, FluidTank> fluids);
+
+    /**
+     * Makes energy reachable at blocks that have no block entity, such as cables, which expose their
+     * grid's shared buffer (see {@link io.github.theskyfell.outworld.core.energy.EnergyGrids}).
+     */
+    void blockEnergy(AtBlock<EnergyBuffer> energy, Block... blocks);
+
+    /** The storage at a block without a block entity, on a side. Only asked on the server. */
+    @FunctionalInterface
+    interface AtBlock<S> {
+        /**
+         * The storage to expose on {@code side}, or null for none.
+         *
+         * @param side the face being accessed, or null when the caller doesn't say
+         */
+        S get(ServerLevel level, BlockPos pos, Direction side);
+    }
 
     /** The storage a block entity exposes on a side. */
     @FunctionalInterface

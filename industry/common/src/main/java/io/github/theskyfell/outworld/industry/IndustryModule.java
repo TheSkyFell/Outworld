@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.industry;
 
+import io.github.theskyfell.outworld.core.energy.EnergyGrids;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
@@ -37,6 +38,11 @@ public final class IndustryModule implements OutworldModule {
         transfers.items(IndustryContent.TEST_CRATE.get(), (crate, side) -> crate.items());
         transfers.energy(IndustryContent.CRUSHER.get(), (crusher, side) -> crusher.energy());
         transfers.items(IndustryContent.CRUSHER.get(), (crusher, side) -> crusher.items());
+        transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
+        transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
+        transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));
+        transfers.energy(IndustryContent.SOLAR_PANEL.get(), (panel, side) -> panel.energy());
+        transfers.blockEnergy((level, pos, side) -> EnergyGrids.bufferAt(level, pos), IndustryContent.CABLE_BLOCK.get());
         transfers.fluids(IndustryContent.TEST_TANK.get(), (tank, side) -> tank.tank());
     }
 

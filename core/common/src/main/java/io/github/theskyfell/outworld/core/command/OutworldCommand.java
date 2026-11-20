@@ -42,7 +42,7 @@ public final class OutworldCommand {
                 .then(StressCommand.node()));
     }
 
-    /** e.g. "Machines in minecraft:overworld: 12 loaded, 3 awake, 480 work batches since start". */
+    /** e.g. "Machines in minecraft:overworld: 12 loaded, 3 awake, 1 waiting, 480 work batches since start". */
     private static String describeMachines() {
         List<MachineScheduler.Stats> stats = MachineScheduler.stats();
         if (stats.isEmpty()) {
@@ -56,6 +56,7 @@ public final class OutworldCommand {
             text.append("Machines in ").append(level.level().dimension().identifier())
                     .append(": ").append(level.loaded()).append(" loaded, ")
                     .append(level.awake()).append(" awake, ")
+                    .append(level.waiting()).append(" waiting, ")
                     .append(level.batches()).append(" work batches since start");
             int watched = MultiblockTracker.watchedPositions(level.level());
             if (watched > 0) {
