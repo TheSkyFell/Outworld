@@ -150,7 +150,7 @@ public final class Grids<S, P> {
             return;
         }
         for (Grids<?, ?> grids : ALL) {
-            LevelGrids levelGrids = grids.levels.get(level);
+            var levelGrids = grids.levels.get(level);
             if (levelGrids != null) {
                 levelGrids.chunkChanged(chunkKey(chunkX, chunkZ));
             }
@@ -160,7 +160,7 @@ public final class Grids<S, P> {
     /** Offers what was put into grids this tick to their neighbours. Called at the end of every level tick. */
     public static void tick(ServerLevel level) {
         for (Grids<?, ?> grids : ALL) {
-            LevelGrids levelGrids = grids.levels.get(level);
+            var levelGrids = grids.levels.get(level);
             if (levelGrids != null && !levelGrids.pending.isEmpty()) {
                 try (var _ = PERF.start()) {
                     levelGrids.distribute();
