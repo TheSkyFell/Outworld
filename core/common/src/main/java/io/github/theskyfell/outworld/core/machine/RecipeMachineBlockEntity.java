@@ -99,13 +99,13 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         long fluidCapacity = layout.tankBuckets() * FluidUnits.BUCKET;
         long gasCapacity = layout.tankBuckets() * Gases.BUCKET;
         for (int i = 0; i < layout.fluidInputs(); i++) {
-            fluidInputs.add(new FluidTank(fluidCapacity, true, false, fluid -> true));
+            fluidInputs.add(new FluidTank(fluidCapacity, true, false, this::usesFluid));
         }
         for (int i = 0; i < layout.fluidOutputs(); i++) {
             fluidOutputs.add(new FluidTank(fluidCapacity, false, true, fluid -> true));
         }
         for (int i = 0; i < layout.gasInputs(); i++) {
-            gasInputs.add(new GasTank(gasCapacity, true, false, gas -> true));
+            gasInputs.add(new GasTank(gasCapacity, true, false, this::usesGas));
         }
         for (int i = 0; i < layout.gasOutputs(); i++) {
             gasOutputs.add(new GasTank(gasCapacity, false, true, gas -> true));
@@ -251,6 +251,18 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return waiting;
     }
 
+    /** Whether a recipe for this machine takes this fluid. Input tanks take nothing else, so pipes can't clog them. */
+    private boolean usesFluid(Fluid fluid) {
+        return level == null || MachineRecipes.forMachine(level, layout.machine()).stream()
+                .anyMatch(recipe -> recipe.fluids().stream().anyMatch(input -> input.fluid().contains(fluid.builtInRegistryHolder())));
+    }
+
+    /** Whether a recipe for this machine takes this gas. Input tanks take nothing else. */
+    private boolean usesGas(ResourceKey<Gas> gas) {
+        return level == null || MachineRecipes.forMachine(level, layout.machine()).stream()
+                .anyMatch(recipe -> recipe.gases().stream().anyMatch(input -> input.gas().equals(gas)));
+    }
+
     /**
      * Draws fluid and gas that this machine's recipes use from neighbouring storage (pipes, tanks,
      * other machines' outputs) into input tanks with room.
@@ -261,7 +273,6 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         if (fluidInputs.isEmpty() && gasInputs.isEmpty()) {
             return false;
         }
-        List<MachineRecipe> recipes = MachineRecipes.forMachine(level, layout.machine());
         boolean pulled = false;
         for (Direction direction : Direction.values()) {
             BlockPos neighbour = worldPosition.relative(direction);
@@ -271,9 +282,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
                     for (FluidTank tank : fluidInputs) {
                         long room = tank.getCapacity() - tank.getAmount();
                         if (room > 0) {
-                            Predicate<Fluid> wanted = fluid -> (tank.isEmpty() || tank.getContents().fluid() == fluid)
-                                    && recipes.stream().anyMatch(recipe -> recipe.fluids().stream()
-                                            .anyMatch(input -> input.fluid().contains(fluid.builtInRegistryHolder())));
+                            Predicate<Fluid> wanted = fluid -> (tank.isEmpty() || tank.getContents().fluid() == fluid) && usesFluid(fluid);
                             pulled |= FluidTransfer.move(source, tank, wanted, room) > 0;
                         }
                     }
@@ -285,9 +294,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
                     for (GasTank tank : gasInputs) {
                         long room = tank.getCapacity() - tank.getAmount();
                         if (room > 0) {
-                            Predicate<ResourceKey<Gas>> wanted = gas -> (tank.isEmpty() || tank.getContents().is(gas))
-                                    && recipes.stream().anyMatch(recipe -> recipe.gases().stream()
-                                            .anyMatch(input -> input.gas().equals(gas)));
+                            Predicate<ResourceKey<Gas>> wanted = gas -> (tank.isEmpty() || tank.getContents().is(gas)) && usesGas(gas);
                             pulled |= GasTransfer.move(source, tank, wanted, room) > 0;
                         }
                     }

@@ -1,0 +1,21 @@
+{
+  "machine": "outworld_industry:boiler",
+  "items": [
+    {
+      "item": "minecraft:blaze_rod"
+    }
+  ],
+  "fluids": [
+    {
+      "fluid": "minecraft:water",
+      "amount": 1500
+    }
+  ],
+  "gas_results": [
+    {
+      "gas": "outworld_industry:steam",
+      "amount": 1500
+    }
+  ],
+  "time": 600
+}
