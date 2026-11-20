@@ -22,14 +22,12 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
     private Component reply = Component.empty();
 
     public TestMachineScreen(TestMachineMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title);
-        this.imageWidth = 240;
-        this.imageHeight = 96;
+        super(menu, inventory, title, 240, 96);
     }
 
     /** Shows the server's reply if this screen is still open. */
     public static void onPong(TestPong pong) {
-        if (Minecraft.getInstance().screen instanceof TestMachineScreen screen) {
+        if (Minecraft.getInstance().gui.screen() instanceof TestMachineScreen screen) {
             long roundTripMillis = System.currentTimeMillis() - pong.sentAtMillis();
             screen.status = Component.translatable("screen.outworld_industry.test_block.reply", roundTripMillis);
             screen.reply = Component.literal(pong.message());
