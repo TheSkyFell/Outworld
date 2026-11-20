@@ -2,14 +2,18 @@ package io.github.theskyfell.outworld.core.client;
 
 import io.github.theskyfell.outworld.core.multiblock.MultiblockControllerBlockEntity;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderSet;
 import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
@@ -20,24 +24,34 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The build preview of multiblock controllers: floating block markers (the particles that show barrier
- * and light blocks) wherever a structure is missing a block. A barrier marker, just in front of the
- * block, flags a position that holds the wrong block. The preview hides itself once the structure is
- * complete, or when the player goes far away or changes dimension.
+ * The build preview of multiblock controllers. Every spot where the structure is missing a block gets
+ * its edges traced in teal sparks, with the block that belongs there floating inside (the marker
+ * particle barrier and light blocks use). A spot that holds the wrong block is traced in orange
+ * instead. The preview hides itself once the structure is complete, or when the player goes far away
+ * or changes dimension.
  *
  * <p>It is worked out on the client from the synced structure and the blocks the client sees, so it
- * sends nothing over the network. A preview is refreshed every {@link #REFRESH_TICKS} ticks, and a
- * marker is only respawned when the previous one runs out, so a preview costs a handful of particles.
+ * sends nothing over the network. Previews refresh every {@link #REFRESH_TICKS} ticks. Only the
+ * {@link #MAX_OUTLINES} problem spots nearest the player are traced each time, and a floating block
+ * is only respawned when the previous one runs out, which keeps a preview to a few hundred particles.
+ * The traced edges follow the player's particle setting; the floating blocks always show.
  */
 public final class MultiblockPreview {
-    /** How often previews are compared with the world. */
+    /** How often previews are compared with the world and their sparks renewed. */
     static final int REFRESH_TICKS = 10;
     /** How long vanilla's block marker particle lasts. */
     private static final int MARKER_TICKS = 80;
-    /** The most markers one preview shows at once. */
+    /** The most floating blocks one preview shows at once. */
     private static final int MAX_MARKERS = 512;
+    /** The most spots one preview traces per refresh, nearest first. */
+    private static final int MAX_OUTLINES = 32;
     /** Previews of controllers further away than this are dropped. */
     private static final double MAX_DISTANCE = 96;
+
+    private static final ParticleOptions MISSING_SPARK = ParticleTypes.SCRAPE;
+    private static final ParticleOptions WRONG_SPARK = ParticleTypes.WAX_ON;
+    /** The corners of a cube and two points along each edge, as fractions of its side. */
+    private static final List<Vec3> OUTLINE_POINTS = outlinePoints();
 
     private static final Map<BlockPos, Map<BlockPos, Long>> PREVIEWS = new HashMap<>();
     private static Level previewLevel;
@@ -87,9 +101,14 @@ public final class MultiblockPreview {
         }
     }
 
+    /** A spot that doesn't hold the right block. */
+    private record Problem(BlockPos pos, BlockState expected, boolean wrongBlock) {
+    }
+
     /**
-     * Spawns markers for the missing blocks of one preview.
+     * Traces the problem spots of one preview and floats the missing blocks.
      *
+     * @param markers when each spot's floating block runs out
      * @return false if the preview should end: the structure is complete, the controller is gone, or
      *         the player is far away
      */
@@ -106,11 +125,9 @@ public final class MultiblockPreview {
         if (structure == null) {
             return false;
         }
-        markers.values().removeIf(until -> until <= now);
 
         Direction facing = controller.facing();
-        boolean incomplete = false;
-        int shown = markers.size();
+        List<Problem> problems = new ArrayList<>();
         for (MultiblockStructure.Entry entry : structure.entries()) {
             BlockPos at = MultiblockStructure.place(entry, pos, facing);
             if (!level.isLoaded(at)) {
@@ -120,27 +137,62 @@ public final class MultiblockPreview {
             if (current.is(entry.part().blocks())) {
                 continue;
             }
-            incomplete = true;
-            if (markers.containsKey(at) || shown >= MAX_MARKERS) {
-                continue;
-            }
             BlockState expected = shownState(entry.part().blocks());
-            if (current.canBeReplaced() && !expected.isAir()) {
-                // Empty spot: float the block that belongs here.
-                level.addAlwaysVisibleParticle(new BlockParticleOption(ParticleTypes.BLOCK_MARKER, expected),
-                        at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 0, 0, 0);
-            } else {
-                // Wrong block: a barrier marker just outside it, on the player's side.
-                Vec3 center = Vec3.atCenterOf(at);
-                Vec3 marker = center.add(player.getEyePosition().subtract(center).normalize().scale(0.75));
-                level.addAlwaysVisibleParticle(new BlockParticleOption(ParticleTypes.BLOCK_MARKER, Blocks.BARRIER.defaultBlockState()),
-                        marker.x, marker.y, marker.z, 0, 0, 0);
-            }
-            // Respawn a little before it runs out, so the marker doesn't flicker.
-            markers.put(at, now + MARKER_TICKS - REFRESH_TICKS);
-            shown++;
+            problems.add(new Problem(at, expected, !current.canBeReplaced() || expected.isAir()));
         }
-        return incomplete;
+        if (problems.isEmpty()) {
+            return false;
+        }
+
+        Vec3 eye = player.getEyePosition();
+        problems.sort(Comparator.comparingDouble(problem -> Vec3.atCenterOf(problem.pos()).distanceToSqr(eye)));
+        markers.values().removeIf(until -> until <= now);
+        int floating = markers.size();
+        for (int i = 0; i < problems.size(); i++) {
+            Problem problem = problems.get(i);
+            if (i < MAX_OUTLINES) {
+                traceEdges(level, problem.pos(), problem.wrongBlock() ? WRONG_SPARK : MISSING_SPARK);
+            }
+            if (!problem.wrongBlock() && floating < MAX_MARKERS && !markers.containsKey(problem.pos())) {
+                BlockPos at = problem.pos();
+                level.addAlwaysVisibleParticle(new BlockParticleOption(ParticleTypes.BLOCK_MARKER, problem.expected()),
+                        at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 0, 0, 0);
+                // Respawn a little before it runs out, so it doesn't flicker.
+                markers.put(at, now + MARKER_TICKS - REFRESH_TICKS);
+                floating++;
+            }
+        }
+        return true;
+    }
+
+    /** Spawns a spark at each corner of the block and along each of its edges. */
+    private static void traceEdges(Level level, BlockPos pos, ParticleOptions spark) {
+        // Slightly larger than the block, so sparks around a solid block aren't hidden inside it.
+        double min = -0.02;
+        double side = 1.04;
+        for (Vec3 point : OUTLINE_POINTS) {
+            level.addParticle(spark,
+                    pos.getX() + min + point.x * side,
+                    pos.getY() + min + point.y * side,
+                    pos.getZ() + min + point.z * side,
+                    0, 0, 0);
+        }
+    }
+
+    /** The 32 points of a cube's edges at thirds: 8 corners and 2 points along each of the 12 edges. */
+    private static List<Vec3> outlinePoints() {
+        List<Vec3> points = new ArrayList<>();
+        for (int x = 0; x <= 3; x++) {
+            for (int y = 0; y <= 3; y++) {
+                for (int z = 0; z <= 3; z++) {
+                    int onFaces = (x % 3 == 0 ? 1 : 0) + (y % 3 == 0 ? 1 : 0) + (z % 3 == 0 ? 1 : 0);
+                    if (onFaces >= 2) {
+                        points.add(new Vec3(x / 3.0, y / 3.0, z / 3.0));
+                    }
+                }
+            }
+        }
+        return List.copyOf(points);
     }
 
     /** The block to show for a part: the first of its blocks. */
