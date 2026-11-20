@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.industry;
 
+import io.github.theskyfell.outworld.core.fluid.OutworldFluid;
 import io.github.theskyfell.outworld.core.menu.Menus;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import io.github.theskyfell.outworld.core.registry.CreativeTabs;
@@ -11,8 +12,14 @@ import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlock;
 import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlock;
 import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.GasLiquefierBlock;
+import io.github.theskyfell.outworld.industry.machine.GasLiquefierBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlock;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlockEntity;
+import io.github.theskyfell.outworld.industry.pipe.FluidPipeBlock;
+import io.github.theskyfell.outworld.industry.pipe.FluidTankBlock;
+import io.github.theskyfell.outworld.industry.pipe.GasPipeBlock;
+import io.github.theskyfell.outworld.industry.pipe.GasTankBlock;
 import io.github.theskyfell.outworld.industry.power.CableBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
@@ -43,9 +50,11 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.material.Fluid;
 
 /** Industry's blocks, items and menus. */
 public final class IndustryContent {
+    public static final Registrar<Fluid> FLUIDS = Registrar.create(Registries.FLUID, OutworldIndustry.MOD_ID);
     public static final Registrar<Block> BLOCKS = Registrar.create(Registries.BLOCK, OutworldIndustry.MOD_ID);
     public static final Registrar<Item> ITEMS = Registrar.create(Registries.ITEM, OutworldIndustry.MOD_ID);
     public static final Registrar<BlockEntityType<?>> BLOCK_ENTITIES = Registrar.create(Registries.BLOCK_ENTITY_TYPE, OutworldIndustry.MOD_ID);
@@ -116,6 +125,49 @@ public final class IndustryContent {
 
     public static final RegistryEntry<Item, BlockItem> CABLE_ITEM = ITEMS.register("cable",
             key -> new BlockItem(CABLE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, GasLiquefierBlock> GAS_LIQUEFIER_BLOCK = BLOCKS.register("gas_liquefier",
+            key -> new GasLiquefierBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> GAS_LIQUEFIER_ITEM = ITEMS.register("gas_liquefier",
+            key -> new BlockItem(GAS_LIQUEFIER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<GasLiquefierBlockEntity>> GAS_LIQUEFIER = BLOCK_ENTITIES.register("gas_liquefier",
+            key -> BlockEntityTypes.create(GasLiquefierBlockEntity::new, GAS_LIQUEFIER_BLOCK.get()));
+
+    // Rocket propellants: liquids that only live in tanks and pipes
+
+    public static final RegistryEntry<Fluid, Fluid> LIQUID_HYDROGEN = FLUIDS.register("liquid_hydrogen",
+            key -> OutworldFluid.create(key, 0xc8ecff));
+
+    public static final RegistryEntry<Fluid, Fluid> LIQUID_OXYGEN = FLUIDS.register("liquid_oxygen",
+            key -> OutworldFluid.create(key, 0x8fb8ff));
+
+    // Pipes and tanks
+
+    public static final RegistryEntry<Block, FluidPipeBlock> FLUID_PIPE_BLOCK = BLOCKS.register("fluid_pipe",
+            key -> new FluidPipeBlock(BlockBehaviour.Properties.of().setId(key).strength(1.0F).sound(SoundType.COPPER).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> FLUID_PIPE_ITEM = ITEMS.register("fluid_pipe",
+            key -> new BlockItem(FLUID_PIPE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, GasPipeBlock> GAS_PIPE_BLOCK = BLOCKS.register("gas_pipe",
+            key -> new GasPipeBlock(BlockBehaviour.Properties.of().setId(key).strength(1.0F).sound(SoundType.METAL).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> GAS_PIPE_ITEM = ITEMS.register("gas_pipe",
+            key -> new BlockItem(GAS_PIPE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, FluidTankBlock> FLUID_TANK_BLOCK = BLOCKS.register("fluid_tank",
+            key -> new FluidTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> FLUID_TANK_ITEM = ITEMS.register("fluid_tank",
+            key -> new BlockItem(FLUID_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, GasTankBlock> GAS_TANK_BLOCK = BLOCKS.register("gas_tank",
+            key -> new GasTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> GAS_TANK_ITEM = ITEMS.register("gas_tank",
+            key -> new BlockItem(GAS_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
     // Materials
 
@@ -209,6 +261,6 @@ public final class IndustryContent {
 
     /** Blocks come first: block items and block entity types look up their blocks when they are created. */
     static List<Registrar<?>> registrars() {
-        return List.of(BLOCKS, ITEMS, BLOCK_ENTITIES, MENUS, TABS);
+        return List.of(FLUIDS, BLOCKS, ITEMS, BLOCK_ENTITIES, MENUS, TABS);
     }
 }
