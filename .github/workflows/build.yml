@@ -82,6 +82,14 @@ jobs:
       - name: Boot a dedicated server with Core and Industry
         run: .github/scripts/boot-server.sh ${{ matrix.loader }}
 
+      - name: Keep the stress test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: stress-report-${{ matrix.loader }}
+          path: industry/${{ matrix.loader }}/runs/server/outworld-stress/*.json
+          if-no-files-found: ignore
+
       - name: Post the failure on the pull request
         if: failure() && github.event_name == 'pull_request'
         continue-on-error: true

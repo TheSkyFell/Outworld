@@ -5,6 +5,8 @@ import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.platform.Services;
 import io.github.theskyfell.outworld.core.registry.Registrar;
+import io.github.theskyfell.outworld.core.stress.StressScenarios;
+import io.github.theskyfell.outworld.industry.test.MachinesStressScenario;
 import io.github.theskyfell.outworld.industry.test.TestMachine;
 import io.github.theskyfell.outworld.industry.test.TestPing;
 import io.github.theskyfell.outworld.industry.test.TestPong;
@@ -39,5 +41,6 @@ public final class IndustryModule implements OutworldModule {
     @Override
     public void init() {
         OutworldIndustry.LOG.info("Outworld Industry starting on {}", Services.PLATFORM.getPlatformName());
+        StressScenarios.register("machines", new MachinesStressScenario());
     }
 }

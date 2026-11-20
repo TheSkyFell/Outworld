@@ -55,7 +55,28 @@ The `core-*` projects have the same run tasks and load Core on its own.
 | `/outworld machines` | Machines loaded and awake in each dimension, and how many multiblock positions are watched (needs the same permission as `/gamemode`) |
 | `/outworld perf` | What Outworld costs the server over the last 100 ticks: the average and worst server tick, Outworld's share of it, and each system's time, with machines broken down by type (same permission) |
 
+| `/outworld stress list \| start <scenario> [count] [x y z] \| status \| stop \| clear` | Builds a stress scenario and measures Outworld's cost under load and idle (needs the same permission as `/ban`; see below) |
+
 Outworld's work also appears as named sections in Minecraft's own profiler (`/debug start`, `/jfr`).
+
+## Stress testing
+
+The v1 budget is under 5 ms of server time per tick for the whole mod, measured in a stress world
+that grows with each milestone (500 machines, 5,000 belt sections, 500 drones, 10 habitats). Each
+mod registers its scenarios; so far there is `machines`: test machines working nonstop, each
+drawing energy from its own creative battery.
+
+```
+/outworld stress start machines 500 64 100 64
+/outworld stress status
+/outworld stress clear
+```
+
+A run keeps its area loaded, warms up for 5 seconds, measures 30 seconds under load, lets everything
+finish and go to sleep, then measures 10 seconds idle. The result goes to the log, to
+`/outworld stress status` and to `outworld-stress/<scenario>.json` in the game folder. CI runs the
+`machines` scenario on both loaders, fails if it goes over budget or if anything stays awake once
+it's quiet, and shows the numbers on each run's summary page.
 
 ## Project layout
 

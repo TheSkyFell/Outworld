@@ -38,7 +38,8 @@ public final class OutworldCommand {
                             String text = PerfReport.build();
                             context.getSource().sendSuccess(() -> Component.literal(text), false);
                             return 1;
-                        })));
+                        }))
+                .then(StressCommand.node()));
     }
 
     /** e.g. "Machines in minecraft:overworld: 12 loaded, 3 awake, 480 work batches since start". */

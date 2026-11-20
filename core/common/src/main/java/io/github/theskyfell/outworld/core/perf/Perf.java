@@ -15,6 +15,7 @@ import java.util.List;
 public final class Perf {
     private static final List<PerfSection> SECTIONS = new ArrayList<>();
     private static final PerfWindow SERVER_TICK = new PerfWindow();
+    private static final List<Runnable> TICK_LISTENERS = new ArrayList<>();
     private static long tickStartNanos = -1;
     private static long tickEndNanos = -1;
 
@@ -48,6 +49,14 @@ public final class Perf {
         return Collections.unmodifiableList(new ArrayList<>(SECTIONS));
     }
 
+    /**
+     * Runs {@code listener} each time a tick's measurements are closed (at the start of the next tick),
+     * when each window's {@link PerfWindow#lastNanos()} holds that tick. Server thread only.
+     */
+    public static synchronized void onTickClosed(Runnable listener) {
+        TICK_LISTENERS.add(listener);
+    }
+
     /** Whole server ticks, from the start of the tick to the end of it. */
     public static PerfWindow serverTicks() {
         return SERVER_TICK;
@@ -64,6 +73,9 @@ public final class Perf {
             SERVER_TICK.roll();
             for (PerfSection section : SECTIONS) {
                 section.roll();
+            }
+            for (Runnable listener : TICK_LISTENERS) {
+                listener.run();
             }
         }
         tickStartNanos = now;

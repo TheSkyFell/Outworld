@@ -11,6 +11,7 @@ import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
 import io.github.theskyfell.outworld.core.perf.Perf;
 import io.github.theskyfell.outworld.core.platform.Services;
+import io.github.theskyfell.outworld.core.stress.StressTest;
 
 /** Outworld Core itself, loaded through the same loader layer as every feature mod. */
 public final class CoreModule implements OutworldModule {
@@ -37,12 +38,14 @@ public final class CoreModule implements OutworldModule {
         OutworldEvents.REGISTER_COMMANDS.register((dispatcher, context, selection) -> OutworldCommand.register(dispatcher));
         OutworldEvents.SERVER_STARTED.register(server -> OutworldCore.LOG.info("Outworld is ready: {}", Modules.describe()));
 
+        StressTest.init();
         OutworldEvents.SERVER_TICK_START.register(server -> Perf.tickStarted());
         OutworldEvents.SERVER_TICK_END.register(server -> Perf.tickEnded());
         OutworldEvents.LEVEL_TICK_END.register(MachineScheduler::tick);
         OutworldEvents.SERVER_STOPPING.register(server -> {
             MachineScheduler.clear();
             MultiblockTracker.clear();
+            StressTest.reset();
             Perf.clear();
         });
     }

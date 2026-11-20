@@ -22,6 +22,10 @@
 #   a shell block is removed or the core is filled, and forms again when they're put back, three
 #   times in all; turning the controller north unforms it and turning it back east forms it again;
 #   27 positions are watched for changes
+# - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
+#   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
+#   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
+#   as an artifact and summarised on the run's page.
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -106,6 +110,8 @@ mb_times=""
 mb_turned=""
 mb_turned_back=""
 mb_machines=""
+stress_start=""
+stress_status=""
 crate_count=""
 crate_item=""
 tank_bottom=""
@@ -179,6 +185,14 @@ if [[ "$result" == "done" ]]; then
     rcon setblock 4 100 12 'outworld_industry:test_multiblock[facing=east]' > /dev/null 2>&1 || true
     mb_turned_back="$(wait_for ': 1b' data get block 4 100 12 formed)"
     mb_machines="$(rcon outworld machines 2>&1 || true)"
+
+    # Stress test: about 55 seconds of warm-up, load, settling and idle.
+    stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
+    for _ in $(seq 1 50); do
+        sleep 3
+        stress_status="$(rcon outworld stress status 2>&1 || true)"
+        [[ "$stress_status" == *"Budget "* ]] && break
+    done
 
     rcon stop > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
@@ -290,6 +304,45 @@ else
     fail "27 multiblock positions watched (machines: ${mb_machines:-none})"
 fi
 
+stress_report="$run_dir/outworld-stress/machines.json"
+stress_check="$(python3 - "$stress_report" <<'PY' 2>&1
+import json, os, sys
+try:
+    report = json.load(open(sys.argv[1]))
+except Exception as error:
+    print(f"no report ({error})")
+    sys.exit(1)
+active, idle = report["active"], report["idle"]
+problems = []
+if not report["within_budget"]:
+    problems.append(f"over budget: {active['outworld_ms']['avg']} ms")
+if active["machines_awake"] < 500:
+    problems.append(f"only {active['machines_awake']} machines awake under load")
+if active["sections_ms"].get("outworld_industry:test_block", {}).get("avg", 0) <= 0:
+    problems.append("no test machine batches measured under load")
+if idle["machines_awake"] != 0:
+    problems.append(f"{idle['machines_awake']} machines still awake when idle")
+if idle["outworld_ms"]["avg"] > 0.05:
+    problems.append(f"idle cost {idle['outworld_ms']['avg']} ms")
+summary_file = os.environ.get("GITHUB_STEP_SUMMARY")
+if summary_file:
+    with open(summary_file, "a") as out:
+        out.write(f"### Stress test: {report['scenario']} x{report['count']} on {report['loader']}\n\n")
+        out.write("| Phase | Outworld avg | p95 | max | Server tick avg | Machines awake |\n|---|---|---|---|---|---|\n")
+        for name, phase in (("Under load", active), ("Idle", idle)):
+            ow, st = phase["outworld_ms"], phase["server_tick_ms"]
+            out.write(f"| {name} | {ow['avg']} ms | {ow['p95']} ms | {ow['max']} ms | {st['avg']} ms | {phase['machines_awake']} |\n")
+        out.write(f"\nBudget {report['budget_ms']} ms per tick: {'within budget' if report['within_budget'] else '**over budget**'}\n\n")
+print("; ".join(problems) if problems else "ok")
+sys.exit(1 if problems else 0)
+PY
+)"
+if [[ "$stress_status" == *"within budget"* && "$stress_check" == "ok" ]]; then
+    pass "stress test: 500 busy machines within the 5 ms budget, all asleep and free once quiet"
+else
+    fail "stress test within budget, 500 awake under load, none awake and ~0 ms when idle (status: ${stress_status:-none}; check: ${stress_check:-none})"
+fi
+
 config="$run_dir/config/outworld/core.json"
 if grep -q '"workIntervalTicks"' "$config" 2>/dev/null; then
     pass "config file written: $config"
@@ -314,6 +367,8 @@ fi
     echo "Machines at the end: ${final_machines:-none}"
     echo "Multiblock: formed ${mb_formed:-none} | shell block removed ${mb_broken:-none} | replaced ${mb_restored:-none} | core filled ${mb_blocked:-none} | cleared ${mb_cleared:-none} | ${mb_times:-none}"
     echo "Multiblock turned north: ${mb_turned:-none} | back east: ${mb_turned_back:-none} | ${mb_machines:-none}"
+    echo "Stress test start: ${stress_start:-none}"
+    echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"
     echo "${perf_reply:-none}"
 } >> "$log"
