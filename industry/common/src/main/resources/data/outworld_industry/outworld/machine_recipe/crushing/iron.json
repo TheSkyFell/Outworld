@@ -1,0 +1,24 @@
+{
+  "machine": "outworld_industry:crusher",
+  "items": [
+    {
+      "item": [
+        "minecraft:raw_iron",
+        "minecraft:iron_ore",
+        "minecraft:deepslate_iron_ore"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:crushed_iron",
+      "count": 2
+    },
+    {
+      "item": "minecraft:gravel",
+      "chance": 0.1
+    }
+  ],
+  "time": 100,
+  "energy": 20
+}

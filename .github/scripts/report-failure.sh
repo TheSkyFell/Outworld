@@ -55,6 +55,8 @@ annotate() {
     echo "::error title=${title}: ${part}::${text}"
 }
 if [[ -f "$log" ]]; then
+    # The server boot's own summary first: it names the checks that failed.
+    annotate "summary" "$(sed -n '/^Boot checks:/,$p' "$log" | cut -c1-400 | head -n 40)"
     annotate "errors" "$(grep -n -E 'What went wrong|error:|Exception|Caused by|FAILED|Could not|Unsupported|MISSING' "$log" | cut -c1-300 | head -n 60)"
     annotate "what went wrong" "$(grep -n -A 12 'What went wrong' "$log" | cut -c1-300 | head -n 40)"
     annotate "last lines" "$(tail -n 60 "$log" | cut -c1-300)"
