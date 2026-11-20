@@ -1,5 +1,9 @@
 package io.github.theskyfell.outworld.core.item;
 
+import com.mojang.serialization.Codec;
+import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 import net.minecraft.core.Direction;
@@ -29,6 +33,14 @@ public class ItemBuffer implements WorldlyContainer, ItemAccess {
         OUTPUT,
         /** Others may insert and extract. */
         STORAGE
+    }
+
+    /** One saved slot, for {@link #save(ValueOutput, String)}. */
+    private record SavedSlot(int slot, ItemStack item) {
+        static final Codec<SavedSlot> CODEC = RecordCodecBuilder.create(instance -> instance.group(
+                Codec.INT.fieldOf("slot").forGetter(SavedSlot::slot),
+                ItemStack.CODEC.fieldOf("item").forGetter(SavedSlot::item)
+        ).apply(instance, SavedSlot::new));
     }
 
     private final NonNullList<ItemStack> items;
@@ -69,6 +81,27 @@ public class ItemBuffer implements WorldlyContainer, ItemAccess {
     public void load(ValueInput input) {
         items.clear();
         ContainerHelper.loadAllItems(input, items);
+    }
+
+    /** Saves the slots under {@code key}, for a block with more than one buffer. */
+    public void save(ValueOutput output, String key) {
+        List<SavedSlot> saved = new ArrayList<>();
+        for (int slot = 0; slot < items.size(); slot++) {
+            if (!items.get(slot).isEmpty()) {
+                saved.add(new SavedSlot(slot, items.get(slot)));
+            }
+        }
+        output.store(key, SavedSlot.CODEC.listOf(), saved);
+    }
+
+    /** Loads slots saved with {@link #save(ValueOutput, String)}. */
+    public void load(ValueInput input, String key) {
+        items.clear();
+        for (SavedSlot saved : input.read(key, SavedSlot.CODEC.listOf()).orElse(List.of())) {
+            if (saved.slot() >= 0 && saved.slot() < items.size()) {
+                items.set(saved.slot(), saved.item());
+            }
+        }
     }
 
     // ItemAccess: the outside world's view, which follows the slot roles

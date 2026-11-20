@@ -48,6 +48,8 @@
   "item.outworld_industry.raw_titanium": "Raw Titanium",
   "item.outworld_industry.steel_ingot": "Steel Ingot",
   "item.outworld_industry.titanium_ingot": "Titanium Ingot",
+  "item.outworld_industry.speed_upgrade": "Speed Upgrade",
+  "item.outworld_industry.efficiency_upgrade": "Efficiency Upgrade",
   "itemGroup.outworld_industry": "Outworld Industry",
   "message.outworld_industry.grid.contents": "%s: %s / %s mB",
   "message.outworld_industry.grid.empty": "Empty (holds %s mB)",

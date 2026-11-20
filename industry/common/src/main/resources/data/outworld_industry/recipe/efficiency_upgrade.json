@@ -1,0 +1,18 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "ALA",
+    "LTL",
+    "ALA"
+  ],
+  "key": {
+    "A": "outworld_industry:aluminium_ingot",
+    "L": "minecraft:lapis_lazuli",
+    "T": "outworld_industry:titanium_ingot"
+  },
+  "result": {
+    "id": "outworld_industry:efficiency_upgrade",
+    "count": 1
+  }
+}

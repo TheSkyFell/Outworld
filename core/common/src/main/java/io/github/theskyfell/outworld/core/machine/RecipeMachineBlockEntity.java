@@ -46,6 +46,9 @@ import net.minecraft.world.level.storage.ValueOutput;
  * recipe's {@code energy} is made every tick instead of used, and the machine pushes its energy into
  * neighbouring storage.
  *
+ * <p>Every recipe machine has two {@link MachineUpgrades upgrade slots}, which players fill through its
+ * screen: speed upgrades shorten recipes, efficiency upgrades make them cheaper.
+ *
  * <p>It works in batches like every machine, and may finish several recipes in one batch. It sleeps
  * when it has no recipe to run or nowhere to put the results, and wakes when its contents change.
  * Short of energy (or, for a generator, with nowhere to put it) it checks again every second.
@@ -75,6 +78,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
     private final Layout layout;
     private final EnergyBuffer energy;
     private final ItemBuffer items;
+    private final MachineUpgrades upgrades = new MachineUpgrades();
     private final List<FluidTank> fluidInputs = new ArrayList<>();
     private final List<FluidTank> fluidOutputs = new ArrayList<>();
     private final List<GasTank> gasInputs = new ArrayList<>();
@@ -121,6 +125,11 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             wake();
         });
         items.onChange(contentsChanged);
+        // Upgrades change how long the recipe takes and what it costs, but not which recipe runs.
+        upgrades.onChange(() -> {
+            setChanged();
+            wake();
+        });
         fluidInputs.forEach(tank -> tank.onChange(contentsChanged));
         fluidOutputs.forEach(tank -> tank.onChange(contentsChanged));
         gasInputs.forEach(tank -> tank.onChange(contentsChanged));
@@ -137,6 +146,11 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
 
     public ItemBuffer items() {
         return items;
+    }
+
+    /** The upgrade slots, which only players fill, through the screen. */
+    public MachineUpgrades upgrades() {
+        return upgrades;
     }
 
     public List<FluidTank> fluidInputs() {
@@ -160,9 +174,9 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         return progress;
     }
 
-    /** How many ticks the current recipe takes, or 0 if there is none. */
+    /** How many ticks the current recipe takes with the machine's upgrades, or 0 if there is none. */
     public int recipeTime() {
-        return recipe == null ? 0 : recipe.time();
+        return recipe == null ? 0 : upgrades.time(recipe.time());
     }
 
     /**
@@ -352,8 +366,11 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             if (recipe == null || !outputsFit(recipe)) {
                 return false; // sleep until the contents change
             }
-            int step = Math.min(ticks, recipe.time() - progress);
-            long perTick = recipe.energy();
+            int time = upgrades.time(recipe.time());
+            // Speed upgrades put in part-way through can leave the recipe with less time to go than it has done.
+            progress = Math.min(progress, time - 1);
+            int step = Math.min(ticks, time - progress);
+            long perTick = upgrades.energyPerTick(recipe.energy(), recipe.time(), layout.generator());
             if (perTick > 0 && layout.generator()) {
                 long room = energy.getCapacity() - energy.getAmount();
                 if (room < step * perTick) {
@@ -381,7 +398,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
             progress += step;
             ticks -= step;
             setChanged();
-            if (progress >= recipe.time()) {
+            if (progress >= time) {
                 complete(level, recipe);
                 progress = 0;
                 recipeCheckNeeded = true;
@@ -583,6 +600,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         super.preRemoveSideEffects(pos, state);
         if (level != null) {
             Containers.dropContents(level, pos, items);
+            Containers.dropContents(level, pos, upgrades);
         }
     }
 
@@ -591,6 +609,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         super.saveAdditional(output);
         energy.save(output, "energy");
         items.save(output);
+        upgrades.save(output, "upgrades");
         output.putInt("progress", progress);
         for (int i = 0; i < fluidInputs.size(); i++) {
             fluidInputs.get(i).save(output, "fluid_in_" + i);
@@ -611,6 +630,7 @@ public abstract class RecipeMachineBlockEntity extends MachineBlockEntity implem
         super.loadAdditional(input);
         energy.load(input, "energy");
         items.load(input);
+        upgrades.load(input, "upgrades");
         progress = input.getIntOr("progress", 0);
         for (int i = 0; i < fluidInputs.size(); i++) {
             fluidInputs.get(i).load(input, "fluid_in_" + i);

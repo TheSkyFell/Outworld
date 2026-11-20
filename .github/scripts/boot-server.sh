@@ -57,6 +57,9 @@
 #   3 125 10; another takes 2 raw iron off the end of a belt at 7 125 8 and feeds a crusher at 7 125 10
 # - the arc furnace: a controller at 5 131 2 with 2 iron and a coal does nothing until its 3x3x3 shell of
 #   refractory bricks (with an iron block in the roof) is built around it, then makes a steel ingot
+# - upgrades: a crusher at 1 136 1 with eight speed upgrades crushes 8 raw iron in about 5 seconds (40
+#   without); one at 4 136 1 with four speed and eight efficiency upgrades crushes 2 raw iron on the
+#   2,000 FE it holds, which on its own pays for one, and keeps 400 FE
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -179,6 +182,10 @@ inserter_state=""
 arc_unformed=""
 arc_steel=""
 arc_status=""
+speed_output=""
+efficiency_output=""
+efficiency_energy=""
+upgrade_state=""
 belts_stress_start=""
 belts_stress_status=""
 gas_bottom=""
@@ -455,6 +462,20 @@ if [[ "$result" == "done" ]]; then
     done
     arc_status="$(rcon data get block 5 131 2 formed 2>&1 || true)"
 
+    # Upgrades: eight speed upgrades on a creative battery, and four speed with eight efficiency
+    # running on the energy the crusher holds.
+    rcon setblock 1 135 1 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 1 136 1 'outworld_industry:crusher{Items:[{Slot:0b,id:"minecraft:raw_iron",count:8}],upgrades:[{slot:0,item:{id:"outworld_industry:speed_upgrade",count:8}}]}' > /dev/null 2>&1 || true
+    rcon setblock 4 136 1 'outworld_industry:crusher{energy:2000L,Items:[{Slot:0b,id:"minecraft:raw_iron",count:2}],upgrades:[{slot:0,item:{id:"outworld_industry:speed_upgrade",count:4}},{slot:1,item:{id:"outworld_industry:efficiency_upgrade",count:8}}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 10); do
+        sleep 1
+        speed_output="$(rcon data get block 1 136 1 'Items[{Slot:1b}]' 2>&1 || true)"
+        efficiency_output="$(rcon data get block 4 136 1 'Items[{Slot:1b}]' 2>&1 || true)"
+        [[ "$speed_output" == *"count: 16"* && "$efficiency_output" == *"count: 4"* ]] && break
+    done
+    efficiency_energy="$(rcon data get block 4 136 1 energy 2>&1 || true)"
+    upgrade_state="speed: $(rcon data get block 1 136 1 2>&1 | cut -c1-400 || true) | efficiency: $(rcon data get block 4 136 1 2>&1 | cut -c1-400 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -493,7 +514,7 @@ check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
 check_log "Industry blocks registered" 'Registered 30 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 45 entries in minecraft:item for outworld_industry'
+check_log "Industry items registered" 'Registered 47 entries in minecraft:item for outworld_industry'
 check_log "Industry block entity types registered" 'Registered 18 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
@@ -699,6 +720,16 @@ if [[ "$arc_unformed" != *"steel_ingot"* && "$arc_steel" == *"steel_ingot"* ]]; 
     pass "the arc furnace waited for its structure, then made steel from iron and coal (${arc_status})"
 else
     fail "no steel before the arc furnace's structure is built, a steel ingot after (before: ${arc_unformed:-none}; after: ${arc_steel:-none}; ${arc_status:-none})"
+fi
+if [[ "$speed_output" == *"crushed_iron"* && "$speed_output" == *"count: 16"* ]]; then
+    pass "eight speed upgrades crushed 8 raw iron within 10 seconds"
+else
+    fail "16 crushed iron within 10 seconds from a crusher with eight speed upgrades (slot: ${speed_output:-none}; ${upgrade_state:-none})"
+fi
+if [[ "$efficiency_output" == *"crushed_iron"* && "$efficiency_output" == *"count: 4"* && "$efficiency_energy" =~ :\ 400L$ ]]; then
+    pass "efficiency upgrades crushed 2 raw iron on 2,000 FE and left 400 FE"
+else
+    fail "4 crushed iron and 400 FE left from a crusher with four speed and eight efficiency upgrades (slot: ${efficiency_output:-none}; ${efficiency_energy:-none}; ${upgrade_state:-none})"
 fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
