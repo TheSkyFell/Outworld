@@ -34,6 +34,7 @@ public abstract class MachineBlockEntity extends BlockEntity {
 
     private long scheduledTime = ASLEEP;
     private long lastWorkTime;
+    private boolean working;
 
     protected MachineBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
@@ -52,9 +53,13 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return OutworldCore.config().machines.workIntervalTicks;
     }
 
-    /** Schedules the machine to work at its next slot. Safe to call from any thread, and when already awake. */
+    /**
+     * Schedules the machine to work at its next slot. Safe to call from any thread, and when already
+     * awake. Calls made by the machine's own {@link #work} (for example through its own energy buffer's
+     * change listener) are ignored: the return value of {@code work} decides whether it stays awake.
+     */
     public final void wake() {
-        if (!(level instanceof ServerLevel serverLevel) || isRemoved()) {
+        if (!(level instanceof ServerLevel serverLevel) || isRemoved() || working) {
             return;
         }
         MinecraftServer server = serverLevel.getServer();
@@ -106,7 +111,13 @@ public abstract class MachineBlockEntity extends BlockEntity {
         }
         int elapsed = (int) Math.clamp(now - lastWorkTime, 1, MAX_ELAPSED_TICKS);
         lastWorkTime = now;
-        boolean stayAwake = work(serverLevel, elapsed);
+        boolean stayAwake;
+        working = true;
+        try {
+            stayAwake = work(serverLevel, elapsed);
+        } finally {
+            working = false;
+        }
         scheduler.countBatch();
         if (stayAwake && scheduledTime == ASLEEP && !isRemoved()) {
             scheduler.schedule(this, nextSlot(now));

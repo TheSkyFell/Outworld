@@ -14,8 +14,8 @@ needs only Outworld Core, so you can install just the parts you want.
 
 | Mod | Id | Status |
 |---|---|---|
-| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, `/outworld version` and `/outworld machines` |
-| Outworld Industry | `outworld_industry` | Started: one temporary test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job) |
+| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, energy that works with other mods' cables and machines, `/outworld version` and `/outworld machines` |
+| Outworld Industry | `outworld_industry` | Started: temporary test blocks: a test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job that costs 10 FE per tick) and a test battery (10,000 FE) |
 | Outworld Habitats | | Planned |
 | Outworld Logistics | | Planned |
 | Outworld Worlds | | Planned |
@@ -23,6 +23,7 @@ needs only Outworld Core, so you can install just the parts you want.
 ## Platform
 
 - Minecraft 26.3, on NeoForge and Fabric (Fabric API required), from one codebase
+- Energy is FE: NeoForge's energy API, and Team Reborn Energy on Fabric (bundled in Outworld Core)
 - Java 25
 
 ## Building
@@ -80,6 +81,7 @@ Core gives common code:
 | Menus that carry data to the client | `Menus` (`core.menu`); screens via `OutworldClientModule` |
 | Machines | `MachineBlock` and `MachineBlockEntity` (`core.machine`): they work in batches every few ticks and sleep when idle, never ticking every tick |
 | Block entity types | `BlockEntityTypes` (`core.registry`) |
+| Energy (FE) | `EnergyBuffer` (`core.energy`), exposed to other mods with `registerTransfers` in the module; `Energy.find` reaches any mod's energy storage |
 
 ## License
 

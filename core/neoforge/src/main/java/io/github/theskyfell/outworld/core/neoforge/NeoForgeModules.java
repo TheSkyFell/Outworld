@@ -1,13 +1,19 @@
 package io.github.theskyfell.outworld.core.neoforge;
 
+import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
+import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import java.util.List;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.bus.api.IEventBus;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.registries.RegisterEvent;
@@ -43,7 +49,20 @@ public final class NeoForgeModules {
             }
         });
 
+        modBus.addListener(RegisterCapabilitiesEvent.class, event -> module.registerTransfers(new CapabilityTransfers(event)));
+
         module.init();
+    }
+
+    /** Exposes Outworld storages as NeoForge capabilities. */
+    private record CapabilityTransfers(RegisterCapabilitiesEvent event) implements Transfers {
+        @Override
+        public <T extends BlockEntity> void energy(BlockEntityType<T> type, SidedEnergy<T> energy) {
+            event.registerBlockEntity(Capabilities.Energy.BLOCK, type, (blockEntity, side) -> {
+                EnergyBuffer buffer = energy.get(blockEntity, side);
+                return buffer == null ? null : NeoForgeEnergy.handlerFor(buffer);
+            });
+        }
     }
 
     private static <T> void register(RegisterEvent event, Registrar<T> registrar) {

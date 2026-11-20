@@ -24,7 +24,7 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
     private List<Component> reply = List.of();
 
     public TestMachineScreen(TestMachineMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 260, 110);
+        super(menu, inventory, title, 300, 110);
     }
 
     /** Shows the server's reply if this screen is still open. */

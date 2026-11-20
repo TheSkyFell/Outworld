@@ -1,7 +1,9 @@
 package io.github.theskyfell.outworld.core.fabric;
 
+import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
+import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
@@ -10,6 +12,9 @@ import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
+import team.reborn.energy.api.EnergyStorage;
 
 /**
  * Loads Outworld modules on Fabric. A mod's {@code onInitialize} calls {@link #load} with its module;
@@ -36,6 +41,18 @@ public final class FabricModules {
         }
 
         module.init();
+        module.registerTransfers(new LookupTransfers());
+    }
+
+    /** Exposes Outworld storages through Fabric's block API lookups. */
+    private static final class LookupTransfers implements Transfers {
+        @Override
+        public <T extends BlockEntity> void energy(BlockEntityType<T> type, SidedEnergy<T> energy) {
+            EnergyStorage.SIDED.registerForBlockEntity((blockEntity, side) -> {
+                EnergyBuffer buffer = energy.get(blockEntity, side);
+                return buffer == null ? null : FabricEnergy.storageFor(buffer);
+            }, type);
+        }
     }
 
     private static <T> void register(Registrar<T> registrar) {

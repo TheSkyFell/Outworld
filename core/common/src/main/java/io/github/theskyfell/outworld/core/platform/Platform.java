@@ -1,10 +1,12 @@
 package io.github.theskyfell.outworld.core.platform;
 
+import io.github.theskyfell.outworld.core.energy.EnergyAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
 import java.util.Optional;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -48,4 +50,7 @@ public interface Platform {
     void sendToPlayersTracking(ServerLevel level, BlockPos pos, CustomPacketPayload payload);
 
     <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks);
+
+    /** The energy storage at {@code pos} as seen from {@code side}, from any mod, or null. */
+    EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side);
 }

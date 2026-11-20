@@ -36,4 +36,11 @@ public interface OutworldModule {
     /** Runs once at startup, on both sides, after registration has been set up. Register event listeners here. */
     default void init() {
     }
+
+    /**
+     * Exposes the mod's storages (energy buffers) to other mods through each loader's transfer API.
+     * Runs after the block entity types are registered.
+     */
+    default void registerTransfers(Transfers transfers) {
+    }
 }
