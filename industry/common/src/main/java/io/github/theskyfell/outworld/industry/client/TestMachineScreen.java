@@ -4,6 +4,8 @@ import io.github.theskyfell.outworld.core.client.ClientNetwork;
 import io.github.theskyfell.outworld.industry.test.TestMachineMenu;
 import io.github.theskyfell.outworld.industry.test.TestPing;
 import io.github.theskyfell.outworld.industry.test.TestPong;
+import java.util.Arrays;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -19,10 +21,10 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
     private static final int TEXT = 0xFF404040;
 
     private Component status = Component.translatable("screen.outworld_industry.test_block.idle");
-    private Component reply = Component.empty();
+    private List<Component> reply = List.of();
 
     public TestMachineScreen(TestMachineMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 240, 96);
+        super(menu, inventory, title, 260, 110);
     }
 
     /** Shows the server's reply if this screen is still open. */
@@ -30,7 +32,7 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
         if (Minecraft.getInstance().gui.screen() instanceof TestMachineScreen screen) {
             long roundTripMillis = System.currentTimeMillis() - pong.sentAtMillis();
             screen.status = Component.translatable("screen.outworld_industry.test_block.reply", roundTripMillis);
-            screen.reply = Component.literal(pong.message());
+            screen.reply = Arrays.stream(pong.message().split("\n")).<Component>map(Component::literal).toList();
         }
     }
 
@@ -39,7 +41,7 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
         super.init();
         addRenderableWidget(Button.builder(Component.translatable("screen.outworld_industry.test_block.ping"), button -> {
             status = Component.translatable("screen.outworld_industry.test_block.waiting");
-            reply = Component.empty();
+            reply = List.of();
             ClientNetwork.sendToServer(new TestPing(menu.pos(), System.currentTimeMillis()));
         }).bounds(leftPos + 8, topPos + imageHeight - 28, 100, 20).build());
     }
@@ -66,6 +68,8 @@ public final class TestMachineScreen extends AbstractContainerScreen<TestMachine
         graphics.text(font, Component.translatable("screen.outworld_industry.test_block.position", menu.pos().toShortString()),
                 8, 22, TEXT, false);
         graphics.text(font, status, 8, 38, TEXT, false);
-        graphics.text(font, reply, 8, 50, TEXT, false);
+        for (int line = 0; line < reply.size(); line++) {
+            graphics.text(font, reply.get(line), 8, 50 + line * 12, TEXT, false);
+        }
     }
 }

@@ -1,8 +1,10 @@
 package io.github.theskyfell.outworld.core.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import io.github.theskyfell.outworld.core.machine.MachineScheduler;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.platform.Services;
+import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -18,6 +20,30 @@ public final class OutworldCommand {
                     String line = "Outworld on " + Services.PLATFORM.getPlatformName() + ": " + Modules.describe();
                     context.getSource().sendSuccess(() -> Component.literal(line), false);
                     return 1;
+                }))
+                .then(Commands.literal("machines").executes(context -> {
+                    String line = describeMachines();
+                    context.getSource().sendSuccess(() -> Component.literal(line), false);
+                    return 1;
                 })));
+    }
+
+    /** e.g. "Machines in minecraft:overworld: 12 loaded, 3 awake, 480 work batches since start". */
+    private static String describeMachines() {
+        List<MachineScheduler.Stats> stats = MachineScheduler.stats();
+        if (stats.isEmpty()) {
+            return "No machines are loaded.";
+        }
+        StringBuilder text = new StringBuilder();
+        for (MachineScheduler.Stats level : stats) {
+            if (!text.isEmpty()) {
+                text.append('\n');
+            }
+            text.append("Machines in ").append(level.level().dimension().identifier())
+                    .append(": ").append(level.loaded()).append(" loaded, ")
+                    .append(level.awake()).append(" awake, ")
+                    .append(level.batches()).append(" work batches since start");
+        }
+        return text.toString();
     }
 }

@@ -15,8 +15,11 @@ public final class TestMachine {
         if (!(sender.containerMenu instanceof TestMachineMenu menu) || !menu.pos().equals(ping.pos())) {
             return;
         }
-        String message = Services.PLATFORM.getPlatformName() + " server, game time " + sender.level().getGameTime()
-                + ", machine interval " + OutworldCore.config().machines.workIntervalTicks + " ticks";
-        Network.sendToPlayer(sender, new TestPong(ping.sentAtMillis(), message));
+        String server = Services.PLATFORM.getPlatformName() + " server, game time " + sender.level().getGameTime()
+                + ", work interval " + OutworldCore.config().machines.workIntervalTicks + " ticks";
+        String machine = sender.level().getBlockEntity(ping.pos()) instanceof TestMachineBlockEntity testMachine
+                ? "Machine " + (testMachine.isAwake() ? "awake" : "asleep") + ", " + testMachine.workDone() + " ticks of work done"
+                : "No machine here";
+        Network.sendToPlayer(sender, new TestPong(ping.sentAtMillis(), server + "\n" + machine));
     }
 }

@@ -2,8 +2,10 @@ package io.github.theskyfell.outworld.core.neoforge;
 
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
+import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
 import java.util.Optional;
+import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -14,6 +16,9 @@ import net.minecraft.world.MenuProvider;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
@@ -66,5 +71,10 @@ public final class NeoForgePlatform implements Platform {
     @Override
     public void sendToPlayersTracking(ServerLevel level, BlockPos pos, CustomPacketPayload payload) {
         PacketDistributor.sendToPlayersTrackingChunk(level, ChunkPos.containing(pos), payload);
+    }
+
+    @Override
+    public <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks) {
+        return new BlockEntityType<>(factory::create, Set.of(blocks));
     }
 }

@@ -14,8 +14,8 @@ needs only Outworld Core, so you can install just the parts you want.
 
 | Mod | Id | Status |
 |---|---|---|
-| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens) and `/outworld version` |
-| Outworld Industry | `outworld_industry` | Started: one temporary test block that opens a screen and pings the server |
+| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, `/outworld version` and `/outworld machines` |
+| Outworld Industry | `outworld_industry` | Started: one temporary test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job) |
 | Outworld Habitats | | Planned |
 | Outworld Logistics | | Planned |
 | Outworld Worlds | | Planned |
@@ -78,6 +78,8 @@ Core gives common code:
 | Settings | `ConfigFile` (`core.config`), a JSON file in `config/<mod id>/` |
 | Network messages | `Payloads` in the module, `Network` to send; client: `ClientNetwork` |
 | Menus that carry data to the client | `Menus` (`core.menu`); screens via `OutworldClientModule` |
+| Machines | `MachineBlock` and `MachineBlockEntity` (`core.machine`): they work in batches every few ticks and sleep when idle, never ticking every tick |
+| Block entity types | `BlockEntityTypes` (`core.registry`) |
 
 ## License
 
