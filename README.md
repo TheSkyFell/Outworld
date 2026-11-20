@@ -5,7 +5,9 @@ other worlds, fly there by shuttle, set up sealed habitats and outposts, and lin
 the main factory with drones and shuttles. Performance comes first: Outworld is built to stay light
 on both servers and clients.
 
-**Status:** early development (milestone M0, foundation). Nothing playable yet.
+**Status:** early development. Milestone M1 (home industry) is done: a factory can turn ore into
+finished items and water into rocket fuel with no one touching it, which CI checks on both loaders.
+Planets, habitats and logistics come next.
 
 ## Mods
 
