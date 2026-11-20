@@ -126,7 +126,7 @@ public final class BeltBlock extends MachineBlock {
         if (level instanceof ServerLevel && level.getBlockEntity(pos) instanceof BeltBlockEntity belt) {
             for (ItemStack item : belt.takeByHand(hit.getLocation())) {
                 if (!player.addItem(item)) {
-                    player.drop(item, false);
+                    Block.popResource(level, player.blockPosition(), item);
                 }
             }
         }
