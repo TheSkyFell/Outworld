@@ -1,32 +1,44 @@
 package io.github.theskyfell.outworld.industry;
 
+import io.github.theskyfell.outworld.core.menu.Menus;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
+import io.github.theskyfell.outworld.industry.test.TestMachineBlock;
+import io.github.theskyfell.outworld.industry.test.TestMachineMenu;
 import java.util.List;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-/** Industry's blocks and items. */
+/** Industry's blocks, items and menus. */
 public final class IndustryContent {
     public static final Registrar<Block> BLOCKS = Registrar.create(Registries.BLOCK, OutworldIndustry.MOD_ID);
     public static final Registrar<Item> ITEMS = Registrar.create(Registries.ITEM, OutworldIndustry.MOD_ID);
+    public static final Registrar<MenuType<?>> MENUS = Registrar.create(Registries.MENU, OutworldIndustry.MOD_ID);
 
-    /** Temporary: proves registration works on both loaders. Goes away once real machines exist. */
-    public static final RegistryEntry<Block, Block> TEST_BLOCK = BLOCKS.register("test_block",
-            key -> new Block(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL)));
+    /**
+     * Temporary: opens a menu that pings the server, which tests registration, menus, screens and
+     * networking on both loaders. Goes away once real machines exist.
+     */
+    public static final RegistryEntry<Block, TestMachineBlock> TEST_BLOCK = BLOCKS.register("test_block",
+            key -> new TestMachineBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL)));
 
     public static final RegistryEntry<Item, BlockItem> TEST_BLOCK_ITEM = ITEMS.register("test_block",
             key -> new BlockItem(TEST_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<MenuType<?>, MenuType<TestMachineMenu>> TEST_MACHINE_MENU = MENUS.register("test_machine",
+            key -> Menus.createType(TestMachineMenu::new, BlockPos.STREAM_CODEC));
 
     private IndustryContent() {
     }
 
     /** Blocks come first: a block item looks up its block when it is created. */
     static List<Registrar<?>> registrars() {
-        return List.of(BLOCKS, ITEMS);
+        return List.of(BLOCKS, ITEMS, MENUS);
     }
 }
