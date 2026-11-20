@@ -32,7 +32,18 @@ public final class OutworldEvents {
 
     public static final Event<CommandRegistration> REGISTER_COMMANDS = new Event<>();
 
+    /** A chunk finished loading on the server (it may have just been generated). */
+    public static final Event<ChunkListener> CHUNK_LOAD = new Event<>();
+
+    /** A chunk is unloading on the server. */
+    public static final Event<ChunkListener> CHUNK_UNLOAD = new Event<>();
+
     private OutworldEvents() {
+    }
+
+    @FunctionalInterface
+    public interface ChunkListener {
+        void onChunk(ServerLevel level, int chunkX, int chunkZ);
     }
 
     @FunctionalInterface
