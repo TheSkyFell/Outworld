@@ -9,6 +9,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
@@ -32,11 +33,13 @@ import net.minecraft.world.level.saveddata.SavedDataType;
  *
  * <ul>
  *   <li>A grid is found (by flood fill) the first time something asks for it, and kept until a block
- *       in or next to it changes or one of its chunks loads or unloads. Nothing is searched on a
- *       timer, and a grid with nothing moving costs nothing.
- *   <li>When something is put into a grid, the grid offers its contents to the storage next to it
- *       (machines, batteries, other mods' blocks) at the end of that tick, starting with a different
- *       neighbour each time so they share fairly. Neighbours take from a grid themselves too.
+ *       in or next to it changes or one of its chunks loads or unloads; a grid that held something
+ *       is then found again at the end of the tick. Nothing is searched on a timer, and a grid with
+ *       nothing moving costs nothing.
+ *   <li>When something is put into a grid, or a grid holding something is found again, the grid
+ *       offers its contents to the storage next to it (machines, batteries, other mods' blocks) at
+ *       the end of that tick, starting with a different neighbour each time so they share fairly.
+ *       Neighbours take from a grid themselves too.
  *   <li>When a grid is dropped, its contents are shared out over its blocks and handed to whichever
  *       grids they join next, so building onto a grid or cutting it in two loses nothing. A block
  *       that is removed takes its share with it.
@@ -157,12 +160,16 @@ public final class Grids<S, P> {
         }
     }
 
-    /** Offers what was put into grids this tick to their neighbours. Called at the end of every level tick. */
+    /**
+     * Finds again the grids dropped this tick that held something, then offers what was put into grids
+     * to their neighbours. Called at the end of every level tick.
+     */
     public static void tick(ServerLevel level) {
         for (Grids<?, ?> grids : ALL) {
             var levelGrids = grids.levels.get(level);
-            if (levelGrids != null && !levelGrids.pending.isEmpty()) {
+            if (levelGrids != null && (!levelGrids.rebuild.isEmpty() || !levelGrids.pending.isEmpty())) {
                 try (var _ = PERF.start()) {
+                    levelGrids.rebuild();
                     levelGrids.distribute();
                 }
             }
@@ -250,6 +257,11 @@ public final class Grids<S, P> {
         final ReferenceOpenHashSet<Grid> live = new ReferenceOpenHashSet<>();
         /** Grids that were given something this tick. */
         final ReferenceLinkedOpenHashSet<Grid> pending = new ReferenceLinkedOpenHashSet<>();
+        /**
+         * Blocks of dropped grids that held something, to find their grids again at the end of the
+         * tick, so a new neighbour of a full grid is offered its contents.
+         */
+        final LongLinkedOpenHashSet rebuild = new LongLinkedOpenHashSet();
         /** What dropped grids held, per block, waiting for that block's next grid. */
         final Long2ObjectOpenHashMap<P> leftover = new Long2ObjectOpenHashMap<>();
         final Saved<S, P> saved;
@@ -329,6 +341,9 @@ public final class Grids<S, P> {
             Grid grid = new Grid(positions, chunks.toLongArray(), neighbours.toLongArray(), neighbourSides, storage, capacity);
             grid.lastAmount = kind.amount(contents);
             kind.listen(storage, () -> contentsChanged(grid));
+            if (grid.lastAmount > 0 && grid.neighbours.length > 0) {
+                pending.add(grid); // offer it to its neighbours, which may be new
+            }
 
             for (long pos : positions) {
                 byPos.put(pos, grid);
@@ -372,6 +387,17 @@ public final class Grids<S, P> {
             }
             grid.lastAmount = amount;
             saved.setDirty();
+        }
+
+        void rebuild() {
+            BlockPos.MutableBlockPos cursor = new BlockPos.MutableBlockPos();
+            while (!rebuild.isEmpty()) {
+                long pos = rebuild.removeFirstLong();
+                cursor.set(pos);
+                if (!byPos.containsKey(pos) && level.isLoaded(cursor) && kind.capacity(level.getBlockState(cursor)) > 0) {
+                    build(cursor.immutable());
+                }
+            }
         }
 
         void distribute() {
@@ -424,6 +450,7 @@ public final class Grids<S, P> {
                 long share = amount / size + (i == 0 ? amount % size : 0);
                 if (share > 0) {
                     leftover.put(pos, kind.withAmount(contents, share));
+                    rebuild.add(pos);
                 }
             }
             for (long chunk : grid.chunks) {
