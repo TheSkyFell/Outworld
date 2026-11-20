@@ -1,0 +1,13 @@
+{
+  "machine": "outworld_industry:combustion_generator",
+  "items": [
+    {
+      "item": [
+        "minecraft:coal",
+        "minecraft:charcoal"
+      ]
+    }
+  ],
+  "time": 800,
+  "energy": 40
+}

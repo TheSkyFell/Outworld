@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.core.mixin;
 
+import io.github.theskyfell.outworld.core.energy.EnergyGrids;
 import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
@@ -14,9 +15,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Reports every block change in a loaded chunk on the server to {@link MultiblockTracker}. Neither
- * loader has an event for all block changes (commands, explosions and pistons included), so this is
- * the one place Core hooks Minecraft directly.
+ * Reports every block change in a loaded chunk on the server to {@link MultiblockTracker} and
+ * {@link EnergyGrids}. Neither loader has an event for all block changes (commands, explosions and
+ * pistons included), so this is the one place Core hooks Minecraft directly.
  */
 @Mixin(LevelChunk.class)
 abstract class LevelChunkMixin {
@@ -27,8 +28,10 @@ abstract class LevelChunkMixin {
     @Inject(method = "setBlockState", at = @At("RETURN"))
     private void outworld$blockChanged(BlockPos pos, BlockState state, int flags, CallbackInfoReturnable<BlockState> callback) {
         // The previous state comes back only when the block actually changed.
-        if (callback.getReturnValue() != null && level instanceof ServerLevel serverLevel) {
+        BlockState previous = callback.getReturnValue();
+        if (previous != null && level instanceof ServerLevel serverLevel) {
             MultiblockTracker.blockChanged(serverLevel, pos);
+            EnergyGrids.blockChanged(serverLevel, pos, previous, state);
         }
     }
 }

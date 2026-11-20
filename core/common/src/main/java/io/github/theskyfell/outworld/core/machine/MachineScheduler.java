@@ -60,12 +60,15 @@ public final class MachineScheduler {
         List<Stats> result = new ArrayList<>();
         for (MachineScheduler scheduler : SCHEDULERS.values()) {
             int awake = 0;
+            int waiting = 0;
             for (MachineBlockEntity machine : scheduler.loaded) {
                 if (machine.isAwake()) {
                     awake++;
+                } else if (machine.isWaiting()) {
+                    waiting++;
                 }
             }
-            result.add(new Stats(scheduler.level, scheduler.loaded.size(), awake, scheduler.batches));
+            result.add(new Stats(scheduler.level, scheduler.loaded.size(), awake, waiting, scheduler.batches));
         }
         return result;
     }
@@ -122,6 +125,7 @@ public final class MachineScheduler {
     private record Entry(long due, MachineBlockEntity machine) {
     }
 
-    public record Stats(ServerLevel level, int loaded, int awake, long batches) {
+    /** @param waiting machines asleep that will check again after a while, such as a solar panel at night */
+    public record Stats(ServerLevel level, int loaded, int awake, int waiting, long batches) {
     }
 }

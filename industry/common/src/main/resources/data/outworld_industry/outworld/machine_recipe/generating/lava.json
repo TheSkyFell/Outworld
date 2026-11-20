@@ -1,0 +1,11 @@
+{
+  "machine": "outworld_industry:combustion_generator",
+  "fluids": [
+    {
+      "fluid": "minecraft:lava",
+      "amount": 100
+    }
+  ],
+  "time": 200,
+  "energy": 40
+}
