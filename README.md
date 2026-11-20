@@ -31,10 +31,10 @@ needs only Outworld Core, so you can install just the parts you want.
 ./gradlew build
 ```
 
-Gradle needs Java 17 or newer installed to start. It downloads Java 25 for compiling if that's
-missing. The mod jars end up in `<module>/<loader>/build/libs/`, for example
-`industry/neoforge/build/libs/`. The first build takes several minutes because it downloads and sets
-up Minecraft.
+You need a JDK 25 installed, for example Temurin 25 from [adoptium.net](https://adoptium.net). Gradle
+finds it on its own, even if another Java is your default. The mod jars end up in
+`<module>/<loader>/build/libs/`, for example `industry/neoforge/build/libs/`. The first build takes
+several minutes because it downloads and sets up Minecraft.
 
 To start the game with Core and Industry loaded:
 
