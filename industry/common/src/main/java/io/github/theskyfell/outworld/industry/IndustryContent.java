@@ -6,6 +6,12 @@ import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlock;
+import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlock;
+import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.OreWasherBlock;
+import io.github.theskyfell.outworld.industry.machine.OreWasherBlockEntity;
 import io.github.theskyfell.outworld.industry.power.CableBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
@@ -53,6 +59,33 @@ public final class IndustryContent {
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<CrusherBlockEntity>> CRUSHER = BLOCK_ENTITIES.register("crusher",
             key -> BlockEntityTypes.create(CrusherBlockEntity::new, CRUSHER_BLOCK.get()));
 
+    public static final RegistryEntry<Block, ElectricFurnaceBlock> ELECTRIC_FURNACE_BLOCK = BLOCKS.register("electric_furnace",
+            key -> new ElectricFurnaceBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> ELECTRIC_FURNACE_ITEM = ITEMS.register("electric_furnace",
+            key -> new BlockItem(ELECTRIC_FURNACE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<ElectricFurnaceBlockEntity>> ELECTRIC_FURNACE = BLOCK_ENTITIES.register("electric_furnace",
+            key -> BlockEntityTypes.create(ElectricFurnaceBlockEntity::new, ELECTRIC_FURNACE_BLOCK.get()));
+
+    public static final RegistryEntry<Block, OreWasherBlock> ORE_WASHER_BLOCK = BLOCKS.register("ore_washer",
+            key -> new OreWasherBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> ORE_WASHER_ITEM = ITEMS.register("ore_washer",
+            key -> new BlockItem(ORE_WASHER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<OreWasherBlockEntity>> ORE_WASHER = BLOCK_ENTITIES.register("ore_washer",
+            key -> BlockEntityTypes.create(OreWasherBlockEntity::new, ORE_WASHER_BLOCK.get()));
+
+    public static final RegistryEntry<Block, ElectrolyzerBlock> ELECTROLYZER_BLOCK = BLOCKS.register("electrolyzer",
+            key -> new ElectrolyzerBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> ELECTROLYZER_ITEM = ITEMS.register("electrolyzer",
+            key -> new BlockItem(ELECTROLYZER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<ElectrolyzerBlockEntity>> ELECTROLYZER = BLOCK_ENTITIES.register("electrolyzer",
+            key -> BlockEntityTypes.create(ElectrolyzerBlockEntity::new, ELECTROLYZER_BLOCK.get()));
+
     // Power
 
     public static final RegistryEntry<Block, CombustionGeneratorBlock> COMBUSTION_GENERATOR_BLOCK = BLOCKS.register("combustion_generator",
@@ -87,6 +120,12 @@ public final class IndustryContent {
     public static final RegistryEntry<Item, Item> CRUSHED_COPPER = ITEMS.register("crushed_copper",
             key -> new Item(new Item.Properties().setId(key)));
     public static final RegistryEntry<Item, Item> CRUSHED_GOLD = ITEMS.register("crushed_gold",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> PURIFIED_IRON = ITEMS.register("purified_iron",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> PURIFIED_COPPER = ITEMS.register("purified_copper",
+            key -> new Item(new Item.Properties().setId(key)));
+    public static final RegistryEntry<Item, Item> PURIFIED_GOLD = ITEMS.register("purified_gold",
             key -> new Item(new Item.Properties().setId(key)));
 
     // Temporary test blocks
