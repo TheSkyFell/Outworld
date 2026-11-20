@@ -8,6 +8,8 @@ import io.github.theskyfell.outworld.industry.test.TestBatteryBlock;
 import io.github.theskyfell.outworld.industry.test.TestBatteryBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestCrateBlock;
 import io.github.theskyfell.outworld.industry.test.TestCrateBlockEntity;
+import io.github.theskyfell.outworld.industry.test.TestGasTankBlock;
+import io.github.theskyfell.outworld.industry.test.TestGasTankBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestMachineBlock;
 import io.github.theskyfell.outworld.industry.test.TestMachineBlockEntity;
 import io.github.theskyfell.outworld.industry.test.TestMachineMenu;
@@ -71,6 +73,13 @@ public final class IndustryContent {
     public static final RegistryEntry<Item, BlockItem> TEST_MULTIBLOCK_ITEM = ITEMS.register("test_multiblock",
             key -> new BlockItem(TEST_MULTIBLOCK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
+    /** Temporary: an eight-bucket gas tank that moves gas upwards, for testing Core's gas storage. */
+    public static final RegistryEntry<Block, TestGasTankBlock> TEST_GAS_TANK_BLOCK = BLOCKS.register("test_gas_tank",
+            key -> new TestGasTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL)));
+
+    public static final RegistryEntry<Item, BlockItem> TEST_GAS_TANK_ITEM = ITEMS.register("test_gas_tank",
+            key -> new BlockItem(TEST_GAS_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestMachineBlockEntity>> TEST_MACHINE = BLOCK_ENTITIES.register("test_block",
             key -> BlockEntityTypes.create(TestMachineBlockEntity::new, TEST_BLOCK.get()));
 
@@ -85,6 +94,9 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestMultiblockBlockEntity>> TEST_MULTIBLOCK = BLOCK_ENTITIES.register("test_multiblock",
             key -> BlockEntityTypes.create(TestMultiblockBlockEntity::new, TEST_MULTIBLOCK_BLOCK.get()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestGasTankBlockEntity>> TEST_GAS_TANK = BLOCK_ENTITIES.register("test_gas_tank",
+            key -> BlockEntityTypes.create(TestGasTankBlockEntity::new, TEST_GAS_TANK_BLOCK.get()));
 
     public static final RegistryEntry<MenuType<?>, MenuType<TestMachineMenu>> TEST_MACHINE_MENU = MENUS.register("test_machine",
             key -> Menus.createType(TestMachineMenu::new, BlockPos.STREAM_CODEC));

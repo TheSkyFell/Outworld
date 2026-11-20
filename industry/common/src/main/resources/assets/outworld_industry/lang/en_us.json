@@ -4,6 +4,7 @@
   "block.outworld_industry.test_crate": "Test Crate",
   "block.outworld_industry.test_tank": "Test Tank",
   "block.outworld_industry.test_multiblock": "Test Multiblock Controller",
+  "block.outworld_industry.test_gas_tank": "Test Gas Tank",
   "container.outworld_industry.test_block": "Test Block",
   "screen.outworld_industry.test_block.position": "Block at %s",
   "screen.outworld_industry.test_block.ping": "Ping server",
