@@ -144,7 +144,6 @@ public final class BeltBlockEntity extends MachineBlockEntity {
         }
         if (clientOutdated) {
             clientOutdated = false;
-            setChanged();
             level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), Block.UPDATE_CLIENTS);
         }
         if (moved) {
@@ -225,8 +224,19 @@ public final class BeltBlockEntity extends MachineBlockEntity {
 
     private void itemsChanged() {
         clientOutdated = true;
-        setChanged();
+        markUnsaved();
         wake();
+    }
+
+    /**
+     * Marks the chunk as needing saving. Not {@link #setChanged()}, which also tells neighbouring
+     * comparators, looking up the blocks around; belts give comparators nothing, and this runs every
+     * time an item is handed on.
+     */
+    private void markUnsaved() {
+        if (level != null) {
+            level.blockEntityChanged(worldPosition);
+        }
     }
 
     /** Puts one of {@code stack} on the lane a player clicked, where they clicked. */
