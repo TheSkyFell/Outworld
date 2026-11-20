@@ -1,7 +1,0 @@
-{
-  "parent": "minecraft:block/cube_column",
-  "textures": {
-    "end": "outworld_industry:block/tank_top",
-    "side": "outworld_industry:block/fluid_tank_side"
-  }
-}

@@ -17,7 +17,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -30,7 +29,6 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.material.Fluid;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
@@ -97,11 +95,6 @@ public final class NeoForgePlatform implements Platform {
                 .icon(icon)
                 .displayItems((parameters, output) -> items.get().forEach(output::accept))
                 .build();
-    }
-
-    @Override
-    public Fluid createFluid(ResourceKey<Fluid> key, int color) {
-        return new NeoForgeFluid(key, color);
     }
 
     @Override

@@ -108,11 +108,9 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
                 int tankX = TANK_RIGHT - GAUGE_WIDTH - i * (GAUGE_WIDTH + 4);
                 if (x >= tankX && x < tankX + GAUGE_WIDTH) {
                     MachineValues.Tank tank = tanks.get(i);
-                    // Named by the translation key gas.<namespace>.<path> or fluid.<namespace>.<path>.
-                    Component contents = tank.contents().isEmpty() ? Component.literal("Empty")
-                            : Component.translatableWithFallback((tank.gas() ? "gas." : "fluid.") + tank.contents().replace(':', '.'), tank.contents());
-                    String amounts = String.format(Locale.ROOT, ": %,d / %,d mB", tank.amount(), tank.capacity());
-                    graphics.text(font, contents.copy().append(amounts), 70, imageHeight - 94, TEXT, false);
+                    String contents = tank.contents().isEmpty() ? "Empty" : tank.contents();
+                    String text = String.format(Locale.ROOT, "%s: %,d / %,d mB", contents, tank.amount(), tank.capacity());
+                    graphics.text(font, Component.literal(text), 70, imageHeight - 94, TEXT, false);
                 }
             }
         }

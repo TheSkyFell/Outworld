@@ -16,15 +16,11 @@ public final class FluidTransfer {
     /**
      * The fluid storage at {@code pos}, as seen from {@code side} (the face of that block you are
      * touching), or null if there is none or its chunk isn't loaded. Works with vanilla cauldrons and
-     * any mod that uses the loader's fluid API, and finds the shared tank at pipes and tank blocks
-     * ({@link FluidConductor}s).
+     * any mod that uses the loader's fluid API.
      */
     public static FluidAccess find(ServerLevel level, BlockPos pos, Direction side) {
         if (!level.isLoaded(pos)) {
             return null;
-        }
-        if (level.getBlockState(pos).getBlock() instanceof FluidConductor) {
-            return FluidGrids.tankAt(level, pos);
         }
         return Services.PLATFORM.findFluids(level, pos, side);
     }

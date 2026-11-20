@@ -15,7 +15,6 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.MenuProvider;
@@ -27,7 +26,6 @@ import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.material.Fluid;
 
 /**
  * What common code needs from the mod loader, on both sides. Each loader project implements this and
@@ -64,12 +62,6 @@ public interface Platform {
      * output type is only public once each loader has widened it.
      */
     CreativeModeTab createCreativeTab(Component title, Supplier<ItemStack> icon, Supplier<List<? extends ItemLike>> items);
-
-    /**
-     * A fluid that lives only in tanks and pipes (see {@code OutworldFluid}), with whatever the loader
-     * needs added: NeoForge gives each fluid a fluid type, registered under the same id.
-     */
-    Fluid createFluid(ResourceKey<Fluid> key, int color);
 
     <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks);
 

@@ -12,7 +12,6 @@ import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import java.util.List;
 import net.minecraft.core.Registry;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerLevel;
@@ -20,13 +19,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
-import net.minecraft.world.level.material.Fluid;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
 import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
@@ -47,17 +44,6 @@ public final class NeoForgeModules {
             for (Registrar<?> registrar : registrars) {
                 register(event, registrar);
             }
-            // Every fluid needs a fluid type on NeoForge: Outworld's fluids get one with the same id.
-            event.register(NeoForgeRegistries.Keys.FLUID_TYPES, helper -> {
-                for (Registrar<?> registrar : registrars) {
-                    if (registrar.registryKey().equals(Registries.FLUID)) {
-                        for (var entry : registrar.entries()) {
-                            ResourceKey<Fluid> key = ResourceKey.create(Registries.FLUID, entry.id());
-                            helper.register(entry.id(), NeoForgeFluid.createType(key));
-                        }
-                    }
-                }
-            });
         });
 
         Payloads payloads = new Payloads();
@@ -102,14 +88,6 @@ public final class NeoForgeModules {
             event.registerBlock(Capabilities.Energy.BLOCK, (level, pos, state, blockEntity, side) -> {
                 EnergyBuffer buffer = level instanceof ServerLevel serverLevel ? energy.get(serverLevel, pos, side) : null;
                 return buffer == null ? null : NeoForgeEnergy.handlerFor(buffer);
-            }, blocks);
-        }
-
-        @Override
-        public void blockFluids(AtBlock<FluidTank> fluids, Block... blocks) {
-            event.registerBlock(Capabilities.Fluid.BLOCK, (level, pos, state, blockEntity, side) -> {
-                FluidTank tank = level instanceof ServerLevel serverLevel ? fluids.get(serverLevel, pos, side) : null;
-                return tank == null ? null : NeoForgeFluids.handlerFor(tank);
             }, blocks);
         }
 
