@@ -53,7 +53,8 @@ public final class IndustryModule implements OutworldModule {
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));
         transfers.energy(IndustryContent.SOLAR_PANEL.get(), (panel, side) -> panel.energy());
-        transfers.blockEnergy((level, pos, side) -> EnergyGrids.bufferAt(level, pos), IndustryContent.CABLE_BLOCK.get());
+        transfers.blockEnergy((level, pos, side) -> EnergyGrids.bufferAt(level, pos),
+                IndustryContent.CABLE_BLOCK.get(), IndustryContent.BATTERY_BLOCK.get());
         transfers.blockFluids((level, pos, side) -> FluidGrids.tankAt(level, pos),
                 IndustryContent.FLUID_PIPE_BLOCK.get(), IndustryContent.FLUID_TANK_BLOCK.get());
         // Fluid only enters a test tank from below, so a pipe on top doesn't hand it back what it pushed up.

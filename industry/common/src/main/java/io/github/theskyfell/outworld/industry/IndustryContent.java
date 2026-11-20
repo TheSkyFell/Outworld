@@ -20,6 +20,7 @@ import io.github.theskyfell.outworld.industry.pipe.FluidPipeBlock;
 import io.github.theskyfell.outworld.industry.pipe.FluidTankBlock;
 import io.github.theskyfell.outworld.industry.pipe.GasPipeBlock;
 import io.github.theskyfell.outworld.industry.pipe.GasTankBlock;
+import io.github.theskyfell.outworld.industry.power.BatteryBlock;
 import io.github.theskyfell.outworld.industry.power.CableBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
@@ -119,6 +120,12 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<SolarPanelBlockEntity>> SOLAR_PANEL = BLOCK_ENTITIES.register("solar_panel",
             key -> BlockEntityTypes.create(SolarPanelBlockEntity::new, SOLAR_PANEL_BLOCK.get()));
+
+    public static final RegistryEntry<Block, BatteryBlock> BATTERY_BLOCK = BLOCKS.register("battery",
+            key -> new BatteryBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> BATTERY_ITEM = ITEMS.register("battery",
+            key -> new BlockItem(BATTERY_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
     public static final RegistryEntry<Block, CableBlock> CABLE_BLOCK = BLOCKS.register("cable",
             key -> new CableBlock(BlockBehaviour.Properties.of().setId(key).strength(0.5F).sound(SoundType.WOOL).noOcclusion()));
