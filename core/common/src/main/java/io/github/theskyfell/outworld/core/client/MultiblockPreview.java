@@ -4,20 +4,17 @@ import io.github.theskyfell.outworld.core.multiblock.MultiblockControllerBlockEn
 import io.github.theskyfell.outworld.core.multiblock.MultiblockStructure;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.HolderSet;
-import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -25,24 +22,20 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * The build preview of multiblock controllers. Every spot where the structure is missing a block gets
- * its edges traced in teal sparks, with the block that belongs there floating inside (the marker
- * particle barrier and light blocks use). A spot that holds the wrong block is traced in orange
- * instead. The preview hides itself once the structure is complete, or when the player goes far away
- * or changes dimension.
+ * its edges traced in teal sparks; a spot that holds the wrong block (or anything at all, where the
+ * structure needs air) is traced in orange. It doesn't show which block goes where, since a spot often
+ * takes any of several blocks (machine cores of different tiers, say); the status message says what is
+ * needed. The preview hides itself once the structure is complete, or when the player goes far away or
+ * changes dimension.
  *
  * <p>It is worked out on the client from the synced structure and the blocks the client sees, so it
- * sends nothing over the network. Previews refresh every {@link #REFRESH_TICKS} ticks. Only the
- * {@link #MAX_OUTLINES} problem spots nearest the player are traced each time, and a floating block
- * is only respawned when the previous one runs out, which keeps a preview to a few hundred particles.
- * The traced edges follow the player's particle setting; the floating blocks always show.
+ * sends nothing over the network. Previews refresh every {@link #REFRESH_TICKS} ticks, and only the
+ * {@link #MAX_OUTLINES} problem spots nearest the player are traced each time, which keeps a preview
+ * to about a thousand short-lived particles. The sparks follow the player's particle setting.
  */
 public final class MultiblockPreview {
     /** How often previews are compared with the world and their sparks renewed. */
     static final int REFRESH_TICKS = 10;
-    /** How long vanilla's block marker particle lasts. */
-    private static final int MARKER_TICKS = 80;
-    /** The most floating blocks one preview shows at once. */
-    private static final int MAX_MARKERS = 512;
     /** The most spots one preview traces per refresh, nearest first. */
     private static final int MAX_OUTLINES = 32;
     /** Previews of controllers further away than this are dropped. */
@@ -53,7 +46,7 @@ public final class MultiblockPreview {
     /** The corners of a cube and two points along each edge, as fractions of its side. */
     private static final List<Vec3> OUTLINE_POINTS = outlinePoints();
 
-    private static final Map<BlockPos, Map<BlockPos, Long>> PREVIEWS = new HashMap<>();
+    private static final Set<BlockPos> PREVIEWS = new HashSet<>();
     private static Level previewLevel;
 
     private MultiblockPreview() {
@@ -66,12 +59,10 @@ public final class MultiblockPreview {
             previewLevel = level;
         }
         BlockPos controller = pos.immutable();
-        if (PREVIEWS.remove(controller) == null) {
-            Map<BlockPos, Long> markers = new HashMap<>();
-            PREVIEWS.put(controller, markers);
+        if (!PREVIEWS.remove(controller)) {
             Player player = Minecraft.getInstance().player;
-            if (player != null && !refresh(level, player, controller, markers, level.getGameTime())) {
-                PREVIEWS.remove(controller); // already complete: nothing to show
+            if (player != null && refresh(level, player, controller)) {
+                PREVIEWS.add(controller); // unless already complete: then there's nothing to show
             }
         }
     }
@@ -92,27 +83,25 @@ public final class MultiblockPreview {
         if (now % REFRESH_TICKS != 0) {
             return;
         }
-        Iterator<Map.Entry<BlockPos, Map<BlockPos, Long>>> previews = PREVIEWS.entrySet().iterator();
+        Iterator<BlockPos> previews = PREVIEWS.iterator();
         while (previews.hasNext()) {
-            Map.Entry<BlockPos, Map<BlockPos, Long>> preview = previews.next();
-            if (!refresh(level, player, preview.getKey(), preview.getValue(), now)) {
+            if (!refresh(level, player, previews.next())) {
                 previews.remove();
             }
         }
     }
 
     /** A spot that doesn't hold the right block. */
-    private record Problem(BlockPos pos, BlockState expected, boolean wrongBlock) {
+    private record Problem(BlockPos pos, boolean wrongBlock) {
     }
 
     /**
-     * Traces the problem spots of one preview and floats the missing blocks.
+     * Traces the problem spots of one preview.
      *
-     * @param markers when each spot's floating block runs out
      * @return false if the preview should end: the structure is complete, the controller is gone, or
      *         the player is far away
      */
-    private static boolean refresh(Level level, Player player, BlockPos pos, Map<BlockPos, Long> markers, long now) {
+    private static boolean refresh(Level level, Player player, BlockPos pos) {
         if (player.position().distanceToSqr(Vec3.atCenterOf(pos)) > MAX_DISTANCE * MAX_DISTANCE) {
             return false;
         }
@@ -136,8 +125,10 @@ public final class MultiblockPreview {
             if (current.is(entry.part().blocks())) {
                 continue;
             }
-            BlockState expected = shownState(entry.part().blocks());
-            problems.add(new Problem(at, expected, !current.canBeReplaced() || expected.isAir()));
+            // Wrong: something solid is in the way, or anything at all where the structure needs air.
+            boolean wrong = !current.isAir()
+                    && (!current.canBeReplaced() || Blocks.AIR.defaultBlockState().is(entry.part().blocks()));
+            problems.add(new Problem(at, wrong));
         }
         if (problems.isEmpty()) {
             return false;
@@ -145,21 +136,9 @@ public final class MultiblockPreview {
 
         Vec3 eye = player.getEyePosition();
         problems.sort(Comparator.comparingDouble(problem -> Vec3.atCenterOf(problem.pos()).distanceToSqr(eye)));
-        markers.values().removeIf(until -> until <= now);
-        int floating = markers.size();
-        for (int i = 0; i < problems.size(); i++) {
+        for (int i = 0; i < Math.min(problems.size(), MAX_OUTLINES); i++) {
             Problem problem = problems.get(i);
-            if (i < MAX_OUTLINES) {
-                traceEdges(level, problem.pos(), problem.wrongBlock() ? WRONG_SPARK : MISSING_SPARK);
-            }
-            if (!problem.wrongBlock() && floating < MAX_MARKERS && !markers.containsKey(problem.pos())) {
-                BlockPos at = problem.pos();
-                level.addAlwaysVisibleParticle(new BlockParticleOption(ParticleTypes.BLOCK_MARKER, problem.expected()),
-                        at.getX() + 0.5, at.getY() + 0.5, at.getZ() + 0.5, 0, 0, 0);
-                // Respawn a little before it runs out, so it doesn't flicker.
-                markers.put(at, now + MARKER_TICKS - REFRESH_TICKS);
-                floating++;
-            }
+            traceEdges(level, problem.pos(), problem.wrongBlock() ? WRONG_SPARK : MISSING_SPARK);
         }
         return true;
     }
@@ -192,10 +171,5 @@ public final class MultiblockPreview {
             }
         }
         return List.copyOf(points);
-    }
-
-    /** The block to show for a part: the first of its blocks. */
-    private static BlockState shownState(HolderSet<Block> blocks) {
-        return blocks.size() == 0 ? Blocks.AIR.defaultBlockState() : blocks.get(0).value().defaultBlockState();
     }
 }
