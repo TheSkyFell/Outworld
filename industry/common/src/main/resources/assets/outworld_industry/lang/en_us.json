@@ -1,5 +1,6 @@
 {
   "block.outworld_industry.test_block": "Test Block",
+  "block.outworld_industry.test_battery": "Test Battery",
   "container.outworld_industry.test_block": "Test Block",
   "screen.outworld_industry.test_block.position": "Block at %s",
   "screen.outworld_industry.test_block.ping": "Ping server",

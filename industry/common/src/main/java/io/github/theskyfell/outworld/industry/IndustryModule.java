@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.industry;
 
 import io.github.theskyfell.outworld.core.module.OutworldModule;
+import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.platform.Services;
 import io.github.theskyfell.outworld.core.registry.Registrar;
@@ -25,6 +26,12 @@ public final class IndustryModule implements OutworldModule {
     public void registerPayloads(Payloads payloads) {
         payloads.serverbound(TestPing.TYPE, TestPing.CODEC, TestMachine::handlePing)
                 .clientbound(TestPong.TYPE, TestPong.CODEC);
+    }
+
+    @Override
+    public void registerTransfers(Transfers transfers) {
+        transfers.energy(IndustryContent.TEST_MACHINE.get(), (machine, side) -> machine.energy());
+        transfers.energy(IndustryContent.TEST_BATTERY.get(), (battery, side) -> battery.energy());
     }
 
     @Override

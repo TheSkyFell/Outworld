@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.core.fabric;
 
+import io.github.theskyfell.outworld.core.energy.EnergyAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
@@ -12,6 +13,7 @@ import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.object.builder.v1.block.entity.FabricBlockEntityTypeBuilder;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.codec.StreamCodec;
@@ -26,6 +28,7 @@ import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
+import team.reborn.energy.api.EnergyStorage;
 
 public final class FabricPlatform implements Platform {
     @Override
@@ -96,5 +99,11 @@ public final class FabricPlatform implements Platform {
     @Override
     public <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks) {
         return FabricBlockEntityTypeBuilder.<T>create(factory::create, blocks).build();
+    }
+
+    @Override
+    public EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side) {
+        EnergyStorage storage = EnergyStorage.SIDED.find(level, pos, side);
+        return storage == null ? null : FabricEnergy.access(storage);
     }
 }

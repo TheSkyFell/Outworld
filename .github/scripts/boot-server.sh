@@ -4,7 +4,10 @@
 # - Core's server events fire and /outworld answers (asked over RCON)
 # - Core's config file was written
 # - machines sleep and wake: a test machine placed at 0 100 0 sleeps; a neighbour change starts a
-#   100-tick job, which it works through in batches of 4 ticks and then sleeps again
+#   100-tick job, but with no energy it sleeps again
+# - energy moves through the loaders' energy APIs: placing a test battery (10,000 FE) next to it wakes
+#   it; it pulls 1,000 FE through the loader lookup and does exactly 100 ticks of work in batches of
+#   4 ticks, then sleeps; the battery is left with 9,000 FE
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -59,19 +62,27 @@ elapsed=$(( SECONDS - start ))
 version_reply=""
 placed_machines=""
 placed_work=""
+starved_machines=""
+starved_work=""
 job_machines=""
 done_work=""
 done_machines=""
+battery_energy=""
 if [[ "$result" == "done" ]]; then
     version_reply="$(rcon outworld version 2>&1 || true)"
 
-    # Machines: place one, let it settle, then give it a job through a neighbour change.
+    # Machines: place one and let it settle. A neighbour change gives it a job, but it has no energy.
+    # Then a battery next to it wakes it, and it pulls the energy it needs.
     rcon forceload add 0 0 > /dev/null 2>&1 || true
     rcon setblock 0 100 0 outworld_industry:test_block > /dev/null 2>&1 || true
     sleep 3
     placed_machines="$(rcon outworld machines 2>&1 || true)"
     placed_work="$(rcon data get block 0 100 0 work_done 2>&1 || true)"
     rcon setblock 1 100 0 minecraft:stone > /dev/null 2>&1 || true
+    sleep 2
+    starved_machines="$(rcon outworld machines 2>&1 || true)"
+    starved_work="$(rcon data get block 0 100 0 work_done 2>&1 || true)"
+    rcon setblock -1 100 0 outworld_industry:test_battery > /dev/null 2>&1 || true
     sleep 1
     job_machines="$(rcon outworld machines 2>&1 || true)"
     for _ in $(seq 1 30); do
@@ -81,6 +92,7 @@ if [[ "$result" == "done" ]]; then
     done
     sleep 1
     done_machines="$(rcon outworld machines 2>&1 || true)"
+    battery_energy="$(rcon data get block -1 100 0 energy 2>&1 || true)"
 
     rcon stop > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
@@ -103,8 +115,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 1 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 1 entries in minecraft:item for outworld_industry'
+check_log "Industry blocks registered" 'Registered 2 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 2 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 2 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
@@ -120,16 +133,26 @@ if [[ "$placed_machines" == *"1 loaded, 0 awake"* && "$placed_work" == *": 0" ]]
 else
     fail "placed machine sleeps (machines: ${placed_machines:-none}; work: ${placed_work:-none})"
 fi
-if [[ "$job_machines" == *"1 loaded, 1 awake"* ]]; then
-    pass "neighbour change woke the machine"
+if [[ "$starved_machines" == *"1 loaded, 0 awake"* && "$starved_work" == *": 0" ]]; then
+    pass "job without energy: machine did no work and slept"
 else
-    fail "neighbour change wakes the machine (machines: ${job_machines:-none})"
+    fail "machine without energy sleeps (machines: ${starved_machines:-none}; work: ${starved_work:-none})"
 fi
-job_batches=$(( $(batches "$done_machines") - $(batches "$placed_machines") ))
+if [[ "$job_machines" == *"1 loaded, 1 awake"* ]]; then
+    pass "battery placed next to it woke the machine"
+else
+    fail "battery placed next to it wakes the machine (machines: ${job_machines:-none})"
+fi
+job_batches=$(( $(batches "$done_machines") - $(batches "$starved_machines") ))
 if [[ "$done_work" == *": 100" && "$done_machines" == *"1 loaded, 0 awake"* ]] && (( job_batches >= 25 && job_batches <= 26 )); then
     pass "100 ticks of work done in ${job_batches} batches, then asleep"
 else
     fail "job of 100 ticks in 25-26 batches, then asleep (work: ${done_work:-none}; machines: ${done_machines:-none}; batches for the job: ${job_batches})"
+fi
+if [[ "$battery_energy" =~ :\ 9000L?$ ]]; then
+    pass "1,000 FE moved through the loader's energy API (battery: ${battery_energy})"
+else
+    fail "battery left with 9000 FE (battery: ${battery_energy:-none})"
 fi
 
 config="$run_dir/config/outworld/core.json"
@@ -148,8 +171,9 @@ fi
 {
     echo "Boot checks: ${failures} failed. /outworld version reply: ${version_reply:-none}"
     echo "Machines after placing: ${placed_machines:-none} | work: ${placed_work:-none}"
-    echo "Machines during the job: ${job_machines:-none}"
-    echo "Machines after the job: ${done_machines:-none} | work: ${done_work:-none}"
+    echo "Machines with a job but no energy: ${starved_machines:-none} | work: ${starved_work:-none}"
+    echo "Machines after the battery was placed: ${job_machines:-none}"
+    echo "Machines after the job: ${done_machines:-none} | work: ${done_work:-none} | battery: ${battery_energy:-none}"
 } >> "$log"
 
 echo

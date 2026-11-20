@@ -1,5 +1,6 @@
 package io.github.theskyfell.outworld.core.neoforge;
 
+import io.github.theskyfell.outworld.core.energy.EnergyAccess;
 import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
@@ -7,6 +8,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 import java.util.Set;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
@@ -22,8 +24,10 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.FMLPaths;
+import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.common.extensions.IMenuTypeExtension;
 import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.transfer.energy.EnergyHandler;
 
 public final class NeoForgePlatform implements Platform {
     @Override
@@ -76,5 +80,11 @@ public final class NeoForgePlatform implements Platform {
     @Override
     public <T extends BlockEntity> BlockEntityType<T> createBlockEntityType(BlockEntityTypes.Factory<T> factory, Block... blocks) {
         return new BlockEntityType<>(factory::create, Set.of(blocks));
+    }
+
+    @Override
+    public EnergyAccess findEnergy(ServerLevel level, BlockPos pos, Direction side) {
+        EnergyHandler handler = level.getCapability(Capabilities.Energy.BLOCK, pos, side);
+        return handler == null ? null : NeoForgeEnergy.access(handler);
     }
 }
