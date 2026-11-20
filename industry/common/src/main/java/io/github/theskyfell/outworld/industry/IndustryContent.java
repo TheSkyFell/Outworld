@@ -8,6 +8,8 @@ import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
 import io.github.theskyfell.outworld.industry.logistics.BeltBlock;
 import io.github.theskyfell.outworld.industry.logistics.BeltBlockEntity;
+import io.github.theskyfell.outworld.industry.logistics.InserterBlock;
+import io.github.theskyfell.outworld.industry.logistics.InserterBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlock;
@@ -185,6 +187,15 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<BeltBlockEntity>> BELT = BLOCK_ENTITIES.register("belt",
             key -> BlockEntityTypes.create(BeltBlockEntity::new, BELT_BLOCK.get()));
+
+    public static final RegistryEntry<Block, InserterBlock> INSERTER_BLOCK = BLOCKS.register("inserter",
+            key -> new InserterBlock(BlockBehaviour.Properties.of().setId(key).strength(2.0F).sound(SoundType.METAL).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> INSERTER_ITEM = ITEMS.register("inserter",
+            key -> new BlockItem(INSERTER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<InserterBlockEntity>> INSERTER = BLOCK_ENTITIES.register("inserter",
+            key -> BlockEntityTypes.create(InserterBlockEntity::new, INSERTER_BLOCK.get()));
 
     // Pipes and tanks
 

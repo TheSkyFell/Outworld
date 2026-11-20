@@ -17,6 +17,7 @@ public final class IndustryClientModule implements OutworldClientModule {
     @Override
     public void registerBlockEntityRenderers(BlockEntityRendererRegistrar renderers) {
         renderers.register(IndustryContent.BELT.get(), BeltRenderer::new);
+        renderers.register(IndustryContent.INSERTER.get(), InserterRenderer::new);
     }
 
     @Override
