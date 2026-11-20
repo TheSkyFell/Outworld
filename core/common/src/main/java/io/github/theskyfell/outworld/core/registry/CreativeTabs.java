@@ -18,14 +18,7 @@ public final class CreativeTabs {
      * {@code Registries.CREATIVE_MODE_TAB}.
      */
     public static CreativeModeTab listing(Registrar<Item> items, Supplier<ItemStack> icon) {
-        return Services.PLATFORM.creativeTabBuilder()
-                .title(Component.translatable("itemGroup." + items.namespace()))
-                .icon(icon)
-                .displayItems((parameters, output) -> {
-                    for (RegistryEntry<Item, ? extends Item> entry : items.entries()) {
-                        output.accept(entry.get());
-                    }
-                })
-                .build();
+        return Services.PLATFORM.createCreativeTab(Component.translatable("itemGroup." + items.namespace()), icon,
+                () -> items.entries().stream().map(RegistryEntry::get).toList());
     }
 }
