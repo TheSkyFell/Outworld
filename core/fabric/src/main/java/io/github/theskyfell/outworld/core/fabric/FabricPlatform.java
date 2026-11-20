@@ -7,7 +7,9 @@ import io.github.theskyfell.outworld.core.menu.MenuFactory;
 import io.github.theskyfell.outworld.core.platform.Platform;
 import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
+import java.util.function.Supplier;
 import net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuProvider;
 import net.fabricmc.fabric.api.menu.v1.ExtendedMenuType;
@@ -34,6 +36,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.CreativeModeTab;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.ItemLike;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -106,8 +110,12 @@ public final class FabricPlatform implements Platform {
     }
 
     @Override
-    public CreativeModeTab.Builder creativeTabBuilder() {
-        return FabricCreativeModeTab.builder();
+    public CreativeModeTab createCreativeTab(Component title, Supplier<ItemStack> icon, Supplier<List<? extends ItemLike>> items) {
+        return FabricCreativeModeTab.builder()
+                .title(title)
+                .icon(icon)
+                .displayItems((parameters, output) -> items.get().forEach(output::accept))
+                .build();
     }
 
     @Override
