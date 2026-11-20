@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "KKK",
+    "IRI"
+  ],
+  "key": {
+    "K": "minecraft:dried_kelp",
+    "I": "minecraft:iron_ingot",
+    "R": "minecraft:redstone"
+  },
+  "result": {
+    "id": "outworld_industry:belt",
+    "count": 6
+  }
+}

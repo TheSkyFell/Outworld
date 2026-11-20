@@ -8,6 +8,7 @@ import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.platform.Services;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.stress.StressScenarios;
+import io.github.theskyfell.outworld.industry.test.BeltsStressScenario;
 import io.github.theskyfell.outworld.industry.test.MachinesStressScenario;
 import io.github.theskyfell.outworld.industry.test.TestMachine;
 import io.github.theskyfell.outworld.industry.test.TestPing;
@@ -53,6 +54,7 @@ public final class IndustryModule implements OutworldModule {
         transfers.fluids(IndustryContent.ELECTROLYZER.get(), (electrolyzer, side) -> electrolyzer.exposedFluidTank(side));
         transfers.energy(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.energy());
         transfers.fluids(IndustryContent.GAS_LIQUEFIER.get(), (liquefier, side) -> liquefier.exposedFluidTank(side));
+        transfers.items(IndustryContent.BELT.get(), (belt, side) -> belt.entry());
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));
@@ -72,6 +74,7 @@ public final class IndustryModule implements OutworldModule {
     public void init() {
         OutworldIndustry.LOG.info("Outworld Industry starting on {}", Services.PLATFORM.getPlatformName());
         StressScenarios.register("machines", new MachinesStressScenario());
+        StressScenarios.register("belts", new BeltsStressScenario());
         // Ores in every overworld biome (NeoForge reads data/outworld_industry/neoforge/biome_modifier).
         for (String ore : List.of("ore_bauxite", "ore_titanium")) {
             Services.PLATFORM.addOverworldFeature(GenerationStep.Decoration.UNDERGROUND_ORES,

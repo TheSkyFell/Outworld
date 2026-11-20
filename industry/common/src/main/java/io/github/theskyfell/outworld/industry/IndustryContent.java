@@ -6,6 +6,8 @@ import io.github.theskyfell.outworld.core.registry.BlockEntityTypes;
 import io.github.theskyfell.outworld.core.registry.CreativeTabs;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import io.github.theskyfell.outworld.core.registry.RegistryEntry;
+import io.github.theskyfell.outworld.industry.logistics.BeltBlock;
+import io.github.theskyfell.outworld.industry.logistics.BeltBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.ElectricFurnaceBlock;
@@ -172,6 +174,17 @@ public final class IndustryContent {
 
     public static final RegistryEntry<Fluid, Fluid> LIQUID_OXYGEN = FLUIDS.register("liquid_oxygen",
             key -> OutworldFluid.create(key, 0x8fb8ff));
+
+    // Logistics
+
+    public static final RegistryEntry<Block, BeltBlock> BELT_BLOCK = BLOCKS.register("belt",
+            key -> new BeltBlock(BlockBehaviour.Properties.of().setId(key).strength(1.5F).sound(SoundType.METAL).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> BELT_ITEM = ITEMS.register("belt",
+            key -> new BlockItem(BELT_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<BeltBlockEntity>> BELT = BLOCK_ENTITIES.register("belt",
+            key -> BlockEntityTypes.create(BeltBlockEntity::new, BELT_BLOCK.get()));
 
     // Pipes and tanks
 

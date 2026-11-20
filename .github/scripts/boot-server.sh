@@ -50,6 +50,9 @@
 # - aluminium and titanium: their ore features place ore in stone (/place feature into blocks of stone
 #   at y 110-116), the crusher crushes raw titanium, and the electric furnace smelts crushed bauxite into
 #   an aluminium ingot
+# - belts: items dropped into a belt's entry slots ride east, round a curve and south into a chest at
+#   3 120 3, both lanes; a belt feeding into the side of a straight belt at 6 120 4 loads its items onto
+#   the line, which ends in a chest at 8 120 5
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -162,6 +165,12 @@ bauxite_placed=""
 titanium_placed=""
 titanium_crushed=""
 aluminium_smelted=""
+belt_iron=""
+belt_gold=""
+sideload_copper=""
+belt_state=""
+belts_stress_start=""
+belts_stress_status=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -382,12 +391,39 @@ if [[ "$result" == "done" ]]; then
         [[ "$aluminium_smelted" == *"aluminium_ingot"* && "$titanium_crushed" == *"crushed_titanium"* && "$titanium_crushed" == *"count: 2"* ]] && break
     done
 
+    # Belts: east, round a curve, south into a chest; and side-loading onto a straight line.
+    rcon setblock 3 120 3 minecraft:chest > /dev/null 2>&1 || true
+    rcon setblock 3 120 2 'outworld_industry:belt[facing=south]' > /dev/null 2>&1 || true
+    rcon setblock 3 120 1 'outworld_industry:belt[facing=south]' > /dev/null 2>&1 || true
+    rcon setblock 2 120 1 'outworld_industry:belt[facing=east]' > /dev/null 2>&1 || true
+    rcon setblock 1 120 1 'outworld_industry:belt[facing=east]{Items:[{Slot:0b,id:"minecraft:iron_ingot",count:3},{Slot:1b,id:"minecraft:gold_ingot",count:3}]}' > /dev/null 2>&1 || true
+    rcon setblock 8 120 5 minecraft:chest > /dev/null 2>&1 || true
+    rcon fill 5 120 5 7 120 5 'outworld_industry:belt[facing=east]' > /dev/null 2>&1 || true
+    rcon setblock 6 120 4 'outworld_industry:belt[facing=south]{Items:[{Slot:0b,id:"minecraft:copper_ingot",count:2},{Slot:1b,id:"minecraft:copper_ingot",count:2}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+        sleep 1
+        belt_iron="$(rcon data get block 3 120 3 'Items[{id:"minecraft:iron_ingot"}].count' 2>&1 || true)"
+        belt_gold="$(rcon data get block 3 120 3 'Items[{id:"minecraft:gold_ingot"}].count' 2>&1 || true)"
+        sideload_copper="$(rcon data get block 8 120 5 'Items[{id:"minecraft:copper_ingot"}].count' 2>&1 || true)"
+        [[ "$belt_iron" =~ :\ 3$ && "$belt_gold" =~ :\ 3$ && "$sideload_copper" =~ :\ 4$ ]] && break
+    done
+    belt_state="curve: $(rcon data get block 3 120 1 2>&1 | cut -c1-300 || true) | side-loaded belt: $(rcon data get block 6 120 5 2>&1 | cut -c1-300 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
         sleep 3
         stress_status="$(rcon outworld stress status 2>&1 || true)"
         [[ "$stress_status" == *"Budget "* ]] && break
+    done
+    # Belts stress test: another 55 seconds, 5,004 belts in loops (139 loops of 36), once the
+    # machines' area is cleared (a new test won't start until the last one's area is gone).
+    rcon outworld stress clear > /dev/null 2>&1 || true
+    belts_stress_start="$(rcon outworld stress start belts 5000 160 100 160 2>&1 || true)"
+    for _ in $(seq 1 50); do
+        sleep 3
+        belts_stress_status="$(rcon outworld stress status 2>&1 || true)"
+        [[ "$belts_stress_status" == *"Budget "* ]] && break
     done
 
     rcon stop > /dev/null 2>&1 || true
@@ -412,9 +448,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 26 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 40 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 15 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 27 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 41 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 16 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
@@ -595,6 +631,16 @@ if [[ "$aluminium_smelted" == *"aluminium_ingot"* ]]; then
 else
     fail "an aluminium ingot from an electric furnace given crushed bauxite (slot: ${aluminium_smelted:-none})"
 fi
+if [[ "$belt_iron" =~ :\ 3$ && "$belt_gold" =~ :\ 3$ ]]; then
+    pass "belts carried 3 iron (left lane) and 3 gold (right lane) round a curve into a chest"
+else
+    fail "3 iron and 3 gold in the chest at the end of the curved belt (iron: ${belt_iron:-none}; gold: ${belt_gold:-none})"
+fi
+if [[ "$sideload_copper" =~ :\ 4$ ]]; then
+    pass "a belt feeding into the side of a straight belt loaded all 4 copper onto it"
+else
+    fail "4 copper side-loaded onto the line and delivered to its chest (copper: ${sideload_copper:-none})"
+fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
     pass "fluid and gas grid contents were saved with the world (${saved_grids})"
@@ -608,22 +654,25 @@ else
     fail "Outworld data files that failed to load: ${data_errors}"
 fi
 
-stress_report="$run_dir/outworld-stress/machines.json"
-stress_check="$(python3 - "$stress_report" <<'PY' 2>&1
+# Checks a stress report: within budget, at least <min_awake> awake under load with batches of
+# <section> measured, nothing awake and next to no cost once quiet.
+check_stress() {
+python3 - "$1" "$2" "$3" <<'PY' 2>&1
 import json, os, sys
 try:
     report = json.load(open(sys.argv[1]))
 except Exception as error:
     print(f"no report ({error})")
     sys.exit(1)
+min_awake, section = int(sys.argv[2]), sys.argv[3]
 active, idle = report["active"], report["idle"]
 problems = []
 if not report["within_budget"]:
     problems.append(f"over budget: {active['outworld_ms']['avg']} ms")
-if active["machines_awake"] < 500:
+if active["machines_awake"] < min_awake:
     problems.append(f"only {active['machines_awake']} machines awake under load")
-if active["sections_ms"].get("outworld_industry:test_block", {}).get("avg", 0) <= 0:
-    problems.append("no test machine batches measured under load")
+if active["sections_ms"].get(section, {}).get("avg", 0) <= 0:
+    problems.append(f"no {section} batches measured under load")
 if idle["machines_awake"] != 0:
     problems.append(f"{idle['machines_awake']} machines still awake when idle")
 if idle["outworld_ms"]["avg"] > 0.05:
@@ -640,11 +689,18 @@ if summary_file:
 print("; ".join(problems) if problems else "ok")
 sys.exit(1 if problems else 0)
 PY
-)"
+}
+stress_check="$(check_stress "$run_dir/outworld-stress/machines.json" 500 outworld_industry:test_block)"
 if [[ "$stress_status" == *"within budget"* && "$stress_check" == "ok" ]]; then
     pass "stress test: 500 busy machines within the 5 ms budget, all asleep and free once quiet"
 else
     fail "stress test within budget, 500 awake under load, none awake and ~0 ms when idle (status: ${stress_status:-none}; check: ${stress_check:-none})"
+fi
+belts_stress_check="$(check_stress "$run_dir/outworld-stress/belts.json" 4500 outworld_industry:belt)"
+if [[ "$belts_stress_status" == *"within budget"* && "$belts_stress_check" == "ok" ]]; then
+    pass "belts stress test: 5,004 belts of moving items within the 5 ms budget, all asleep and free once quiet"
+else
+    fail "belts stress test within budget, at least 4,500 belts awake under load, none when idle (status: ${belts_stress_status:-none}; check: ${belts_stress_check:-none})"
 fi
 
 config="$run_dir/config/outworld/core.json"
@@ -689,6 +745,9 @@ fi
     echo "Steam: battery ${steam_grid:-none} | ${steam_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
+    echo "Belts stress test start: ${belts_stress_start:-none}"
+    echo "Belts stress test result: ${belts_stress_status:-none}"
+    echo "Belts: ${belt_state:-none}"
     echo "/outworld perf while the test machine worked:"
     echo "${perf_reply:-none}"
 } >> "$log"
@@ -697,6 +756,10 @@ fi
 if [[ -n "$stress_status" ]]; then
     stress_notice="${stress_status//'%'/'%25'}"
     echo "::notice title=Stress test (${loader})::${stress_notice//$'\n'/'%0A'}"
+fi
+if [[ -n "$belts_stress_status" ]]; then
+    belts_notice="${belts_stress_status//'%'/'%25'}"
+    echo "::notice title=Belts stress test (${loader})::${belts_notice//$'\n'/'%0A'}"
 fi
 
 echo
