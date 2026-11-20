@@ -1,0 +1,11 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "category": "misc",
+  "ingredients": [
+    "outworld_industry:titanium_block"
+  ],
+  "result": {
+    "id": "outworld_industry:titanium_ingot",
+    "count": 9
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "building",
+  "pattern": [
+    "###",
+    "###",
+    "###"
+  ],
+  "key": {
+    "#": "outworld_industry:aluminium_ingot"
+  },
+  "result": {
+    "id": "outworld_industry:aluminium_block",
+    "count": 1
+  }
+}

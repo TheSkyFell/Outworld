@@ -1,0 +1,23 @@
+{
+  "machine": "outworld_industry:ore_washer",
+  "items": [
+    {
+      "item": "outworld_industry:crushed_titanium",
+      "count": 2
+    }
+  ],
+  "fluids": [
+    {
+      "fluid": "minecraft:water",
+      "amount": 100
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:purified_titanium",
+      "count": 3
+    }
+  ],
+  "time": 100,
+  "energy": 20
+}

@@ -14,6 +14,10 @@ import io.github.theskyfell.outworld.industry.test.TestPing;
 import io.github.theskyfell.outworld.industry.test.TestPong;
 import java.util.List;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.levelgen.GenerationStep;
 
 /** Outworld Industry, as handed to Core's loader layer. */
 public final class IndustryModule implements OutworldModule {
@@ -68,5 +72,10 @@ public final class IndustryModule implements OutworldModule {
     public void init() {
         OutworldIndustry.LOG.info("Outworld Industry starting on {}", Services.PLATFORM.getPlatformName());
         StressScenarios.register("machines", new MachinesStressScenario());
+        // Ores in every overworld biome (NeoForge reads data/outworld_industry/neoforge/biome_modifier).
+        for (String ore : List.of("ore_bauxite", "ore_titanium")) {
+            Services.PLATFORM.addOverworldFeature(GenerationStep.Decoration.UNDERGROUND_ORES,
+                    ResourceKey.create(Registries.PLACED_FEATURE, Identifier.fromNamespaceAndPath(OutworldIndustry.MOD_ID, ore)));
+        }
     }
 }

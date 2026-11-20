@@ -1,5 +1,10 @@
 {
   "values": [
+    "outworld_industry:titanium_block",
+    "outworld_industry:aluminium_block",
+    "outworld_industry:deepslate_titanium_ore",
+    "outworld_industry:titanium_ore",
+    "outworld_industry:bauxite_ore",
     "outworld_industry:steam_turbine",
     "outworld_industry:boiler",
     "outworld_industry:battery",
