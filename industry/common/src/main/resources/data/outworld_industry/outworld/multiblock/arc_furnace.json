@@ -1,0 +1,24 @@
+{
+  "pattern": [
+    [
+      "CCC",
+      "CCC",
+      "CCC"
+    ],
+    [
+      "C@C",
+      "C_C",
+      "CCC"
+    ],
+    [
+      "CCC",
+      "CIC",
+      "CCC"
+    ]
+  ],
+  "key": {
+    "C": "outworld_industry:refractory_bricks",
+    "_": "#minecraft:air",
+    "I": "minecraft:iron_block"
+  }
+}

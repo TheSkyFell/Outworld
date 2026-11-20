@@ -55,6 +55,8 @@
 #   the line, which ends in a chest at 8 120 5
 # - inserters: one takes 4 iron from a chest at 1 125 8 and puts them on a belt that runs into a chest at
 #   3 125 10; another takes 2 raw iron off the end of a belt at 7 125 8 and feeds a crusher at 7 125 10
+# - the arc furnace: a controller at 5 131 2 with 2 iron and a coal does nothing until its 3x3x3 shell of
+#   refractory bricks (with an iron block in the roof) is built around it, then makes a steel ingot
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -174,6 +176,9 @@ belt_state=""
 inserted_iron=""
 inserted_crushed=""
 inserter_state=""
+arc_unformed=""
+arc_steel=""
+arc_status=""
 belts_stress_start=""
 belts_stress_status=""
 gas_bottom=""
@@ -435,6 +440,21 @@ if [[ "$result" == "done" ]]; then
     done
     inserter_state="chest inserter: $(rcon data get block 2 125 8 2>&1 | cut -c1-250 || true) | belt inserter: $(rcon data get block 7 125 9 2>&1 | cut -c1-250 || true) | crusher: $(rcon data get block 7 125 10 Items 2>&1 | cut -c1-250 || true)"
 
+    # Arc furnace: the controller first on its own (it must not work), then its structure.
+    rcon setblock 5 131 1 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 5 131 2 'outworld_industry:arc_furnace[facing=north]{Items:[{Slot:0b,id:"minecraft:iron_ingot",count:2},{Slot:1b,id:"minecraft:coal",count:1}]}' > /dev/null 2>&1 || true
+    sleep 3
+    arc_unformed="$(rcon data get block 5 131 2 'Items[{Slot:2b}]' 2>&1 || true)"
+    rcon fill 4 130 2 6 132 4 outworld_industry:refractory_bricks replace minecraft:air > /dev/null 2>&1 || true
+    rcon setblock 5 131 3 minecraft:air > /dev/null 2>&1 || true
+    rcon setblock 5 132 3 minecraft:iron_block > /dev/null 2>&1 || true
+    for _ in $(seq 1 20); do
+        sleep 1
+        arc_steel="$(rcon data get block 5 131 2 'Items[{Slot:2b}]' 2>&1 || true)"
+        [[ "$arc_steel" == *"steel_ingot"* ]] && break
+    done
+    arc_status="$(rcon data get block 5 131 2 formed 2>&1 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -474,9 +494,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 28 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 42 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 17 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 30 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 45 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 18 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
@@ -676,6 +696,11 @@ if [[ "$inserted_crushed" == *"crushed_iron"* && "$inserted_crushed" == *"count:
     pass "an inserter took raw iron off a belt and fed a crusher (4 crushed iron)"
 else
     fail "4 crushed iron from a crusher fed by an inserter from a belt (slot: ${inserted_crushed:-none})"
+fi
+if [[ "$arc_unformed" != *"steel_ingot"* && "$arc_steel" == *"steel_ingot"* ]]; then
+    pass "the arc furnace waited for its structure, then made steel from iron and coal (${arc_status})"
+else
+    fail "no steel before the arc furnace's structure is built, a steel ingot after (before: ${arc_unformed:-none}; after: ${arc_steel:-none}; ${arc_status:-none})"
 fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then

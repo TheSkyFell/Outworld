@@ -19,8 +19,8 @@ import net.minecraft.server.level.ServerLevel;
 public final class MultiblockTracker {
     private static final Map<ServerLevel, MultiblockTracker> TRACKERS = new IdentityHashMap<>();
 
-    private final Long2ObjectOpenHashMap<List<MultiblockControllerBlockEntity>> watchers = new Long2ObjectOpenHashMap<>();
-    private final Map<MultiblockControllerBlockEntity, long[]> claims = new IdentityHashMap<>();
+    private final Long2ObjectOpenHashMap<List<MultiblockLink>> watchers = new Long2ObjectOpenHashMap<>();
+    private final Map<MultiblockLink, long[]> claims = new IdentityHashMap<>();
 
     private MultiblockTracker() {
     }
@@ -39,23 +39,23 @@ public final class MultiblockTracker {
         if (tracker == null) {
             return;
         }
-        List<MultiblockControllerBlockEntity> controllers = tracker.watchers.get(pos.asLong());
+        List<MultiblockLink> controllers = tracker.watchers.get(pos.asLong());
         if (controllers != null) {
             // Copy: a controller's reaction may change the claims.
-            for (MultiblockControllerBlockEntity controller : List.copyOf(controllers)) {
+            for (MultiblockLink controller : List.copyOf(controllers)) {
                 controller.structureChanged();
             }
         }
     }
 
     /** Replaces a controller's claimed positions. */
-    static void claim(ServerLevel level, MultiblockControllerBlockEntity controller, List<BlockPos> positions) {
+    static void claim(ServerLevel level, MultiblockLink controller, List<BlockPos> positions) {
         MultiblockTracker tracker = TRACKERS.computeIfAbsent(level, l -> new MultiblockTracker());
         tracker.unclaim(controller);
         long[] packed = new long[positions.size()];
         for (int i = 0; i < packed.length; i++) {
             packed[i] = positions.get(i).asLong();
-            List<MultiblockControllerBlockEntity> controllers = tracker.watchers.get(packed[i]);
+            List<MultiblockLink> controllers = tracker.watchers.get(packed[i]);
             if (controllers == null) {
                 controllers = new ArrayList<>(1);
                 tracker.watchers.put(packed[i], controllers);
@@ -66,7 +66,7 @@ public final class MultiblockTracker {
     }
 
     /** Forgets a controller's claims. Never creates a tracker. */
-    static void release(ServerLevel level, MultiblockControllerBlockEntity controller) {
+    static void release(ServerLevel level, MultiblockLink controller) {
         MultiblockTracker tracker = TRACKERS.get(level);
         if (tracker != null) {
             tracker.unclaim(controller);
@@ -87,13 +87,13 @@ public final class MultiblockTracker {
         return tracker == null ? 0 : tracker.watchers.size();
     }
 
-    private void unclaim(MultiblockControllerBlockEntity controller) {
+    private void unclaim(MultiblockLink controller) {
         long[] packed = claims.remove(controller);
         if (packed == null) {
             return;
         }
         for (long pos : packed) {
-            List<MultiblockControllerBlockEntity> controllers = watchers.get(pos);
+            List<MultiblockLink> controllers = watchers.get(pos);
             if (controllers != null) {
                 controllers.remove(controller);
                 if (controllers.isEmpty()) {

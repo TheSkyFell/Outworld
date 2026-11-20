@@ -23,8 +23,9 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The base of every multiblock controller block. Its block entity must be a
- * {@link MultiblockControllerBlockEntity}.
+ * The base of a block that exists only as a multiblock's controller. Its block entity must be a
+ * {@link MultiblockControllerBlockEntity}. (A recipe machine that is also a multiblock uses
+ * {@code MultiblockRecipeMachineBlock}, which shares {@link #placeNeededBlock} and {@link #showStructure}.)
  *
  * <p>It faces away from the player who places it, and the structure turns with it. Right-clicking it
  * while holding a block the structure needs places that block in the nearest empty spot that needs
@@ -70,15 +71,24 @@ public abstract class MultiblockControllerBlock extends MachineBlock {
     @Override
     protected InteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
             InteractionHand hand, BlockHitResult hit) {
-        if (stack.getItem() instanceof BlockItem blockItem
-                && level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity controller) {
-            BlockPos target = controller.nextSpotFor(level, blockItem.getBlock(), player.getEyePosition());
+        InteractionResult placed = placeNeededBlock(stack, level, pos, player, hand);
+        // Not a block the structure needs, or nowhere free to put it: act as if the hand were empty.
+        return placed != null ? placed : super.useItemOn(stack, state, level, pos, player, hand, hit);
+    }
+
+    /**
+     * If {@code stack} is a block the structure of the controller at {@code pos} needs, places it in the
+     * nearest empty spot that needs it and returns the result; otherwise returns null. For any controller
+     * block's {@code useItemOn}.
+     */
+    public static InteractionResult placeNeededBlock(ItemStack stack, Level level, BlockPos pos, Player player, InteractionHand hand) {
+        if (stack.getItem() instanceof BlockItem blockItem && level.getBlockEntity(pos) instanceof MultiblockController controller) {
+            BlockPos target = controller.multiblock().nextSpotFor(level, blockItem.getBlock(), player.getEyePosition());
             if (target != null) {
                 return level.isClientSide() ? InteractionResult.SUCCESS : placeInStructure(blockItem, stack, level, target, player, hand);
             }
         }
-        // Not a block the structure needs, or nowhere free to put it: act as if the hand were empty.
-        return super.useItemOn(stack, state, level, pos, player, hand, hit);
+        return null;
     }
 
     /** Places the held block at {@code target} as if the player had clicked there. */
@@ -106,13 +116,16 @@ public abstract class MultiblockControllerBlock extends MachineBlock {
         return showStructure(level, pos, player);
     }
 
-    /** Toggles the build preview on the client and sends the structure's status from the server. */
-    protected final InteractionResult showStructure(Level level, BlockPos pos, Player player) {
-        if (level.getBlockEntity(pos) instanceof MultiblockControllerBlockEntity controller) {
+    /**
+     * Toggles the build preview on the client and sends the structure's status from the server. For any
+     * controller block.
+     */
+    public static InteractionResult showStructure(Level level, BlockPos pos, Player player) {
+        if (level.getBlockEntity(pos) instanceof MultiblockController controller) {
             if (level.isClientSide()) {
                 previewToggle.accept(level, pos);
             } else if (player instanceof ServerPlayer serverPlayer) {
-                serverPlayer.sendSystemMessage(controller.status(), false);
+                serverPlayer.sendSystemMessage(controller.multiblock().status(), false);
             }
         }
         return InteractionResult.SUCCESS;

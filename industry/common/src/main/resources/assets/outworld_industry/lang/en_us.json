@@ -1,5 +1,6 @@
 {
   "block.outworld_industry.aluminium_block": "Block of Aluminium",
+  "block.outworld_industry.arc_furnace": "Arc Furnace",
   "block.outworld_industry.battery": "Battery",
   "block.outworld_industry.bauxite_ore": "Bauxite Ore",
   "block.outworld_industry.belt": "Conveyor Belt",
@@ -17,6 +18,7 @@
   "block.outworld_industry.gas_tank": "Gas Tank",
   "block.outworld_industry.inserter": "Inserter",
   "block.outworld_industry.ore_washer": "Ore Washer",
+  "block.outworld_industry.refractory_bricks": "Refractory Bricks",
   "block.outworld_industry.solar_panel": "Solar Panel",
   "block.outworld_industry.steam_turbine": "Steam Turbine",
   "block.outworld_industry.test_battery": "Test Battery",
@@ -44,6 +46,7 @@
   "item.outworld_industry.purified_titanium": "Purified Titanium",
   "item.outworld_industry.raw_bauxite": "Raw Bauxite",
   "item.outworld_industry.raw_titanium": "Raw Titanium",
+  "item.outworld_industry.steel_ingot": "Steel Ingot",
   "item.outworld_industry.titanium_ingot": "Titanium Ingot",
   "itemGroup.outworld_industry": "Outworld Industry",
   "message.outworld_industry.grid.contents": "%s: %s / %s mB",

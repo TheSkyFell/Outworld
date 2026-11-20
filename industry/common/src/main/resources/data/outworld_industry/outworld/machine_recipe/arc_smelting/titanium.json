@@ -1,0 +1,18 @@
+{
+  "machine": "outworld_industry:arc_furnace",
+  "items": [
+    {
+      "item": [
+        "outworld_industry:purified_titanium",
+        "outworld_industry:crushed_titanium"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "item": "outworld_industry:titanium_ingot"
+    }
+  ],
+  "time": 200,
+  "energy": 160
+}

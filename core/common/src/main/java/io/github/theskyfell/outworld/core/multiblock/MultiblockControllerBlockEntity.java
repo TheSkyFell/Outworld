@@ -1,11 +1,6 @@
 package io.github.theskyfell.outworld.core.multiblock;
 
-import io.github.theskyfell.outworld.core.OutworldCore;
 import io.github.theskyfell.outworld.core.machine.MachineBlockEntity;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
@@ -15,13 +10,13 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.storage.ValueOutput;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * The block entity of a multiblock's controller. It is a machine: it does its work in
- * {@link #workFormed}, which only runs while the structure is complete.
+ * The block entity of a machine that exists only as a multiblock's controller. It does its work in
+ * {@link #workFormed}, which only runs while the structure is complete. (A recipe machine that is also
+ * a multiblock extends {@code MultiblockRecipeMachineBlockEntity} instead.)
  *
  * <p>The structure is checked when the controller loads and again whenever a block in it changes
  * (including the controller turning); nothing is scanned on a timer. {@link #onFormed} and
@@ -31,18 +26,18 @@ import net.minecraft.world.phys.Vec3;
  * <p>The structure turns with the controller's {@code facing} block state property if it has one;
  * otherwise it faces north.
  */
-public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity {
-    private static final Set<ResourceKey<MultiblockStructure>> WARNED_UNKNOWN = ConcurrentHashMap.newKeySet();
-
-    private boolean formed;
-    private boolean checkNeeded = true;
-    private boolean unknownStructure;
-    private MultiblockStructure.Match lastMatch;
-    private MultiblockStructure claimedStructure;
-    private Direction claimedFacing;
+public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity implements MultiblockController {
+    private final MultiblockLink link = new MultiblockLink(this, this::structureKey);
 
     protected MultiblockControllerBlockEntity(BlockEntityType<?> type, BlockPos pos, BlockState state) {
         super(type, pos, state);
+        link.onFormedChanged((formed, match) -> {
+            if (formed) {
+                onFormed(match);
+            } else {
+                onUnformed();
+            }
+        });
     }
 
     /** The structure this controller forms, from the {@link MultiblockStructure#REGISTRY} data registry. */
@@ -64,173 +59,68 @@ public abstract class MultiblockControllerBlockEntity extends MachineBlockEntity
     protected void onUnformed() {
     }
 
+    @Override
+    public final MultiblockLink multiblock() {
+        return link;
+    }
+
     public final boolean isFormed() {
-        return formed;
+        return link.isFormed();
     }
 
     /** The most recent check's result, or null before the first check. */
     public final MultiblockStructure.Match lastMatch() {
-        return lastMatch;
+        return link.lastMatch();
     }
 
     /** Which way the controller, and so the structure, faces. */
     public Direction facing() {
-        BlockState state = getBlockState();
-        return state.hasProperty(BlockStateProperties.HORIZONTAL_FACING)
-                ? state.getValue(BlockStateProperties.HORIZONTAL_FACING)
-                : Direction.NORTH;
+        return link.facing();
     }
 
     /** The structure this controller forms, or null if no such structure is loaded. Works on both sides. */
     public final MultiblockStructure structure(Level level) {
-        return level.registryAccess().lookupOrThrow(MultiblockStructure.REGISTRY).getValue(structureKey());
+        return link.structure(level);
     }
 
-    /**
-     * The empty spot nearest {@code from} where the structure needs {@code block}, or null if there is
-     * none. Spots holding another block don't count: something would have to be broken first.
-     */
+    /** See {@link MultiblockLink#nextSpotFor}. */
     public BlockPos nextSpotFor(Level level, Block block, Vec3 from) {
-        MultiblockStructure structure = structure(level);
-        if (structure == null) {
-            return null;
-        }
-        BlockState placed = block.defaultBlockState();
-        Direction facing = facing();
-        BlockPos nearest = null;
-        double nearestDistance = Double.MAX_VALUE;
-        for (MultiblockStructure.Entry entry : structure.entries()) {
-            if (!placed.is(entry.part().blocks())) {
-                continue;
-            }
-            BlockPos at = MultiblockStructure.place(entry, worldPosition, facing);
-            if (!level.isLoaded(at)) {
-                continue;
-            }
-            BlockState current = level.getBlockState(at);
-            if (current.is(entry.part().blocks()) || !current.canBeReplaced()) {
-                continue;
-            }
-            double distance = Vec3.atCenterOf(at).distanceToSqr(from);
-            if (distance < nearestDistance) {
-                nearest = at;
-                nearestDistance = distance;
-            }
-        }
-        return nearest;
+        return link.nextSpotFor(level, block, from);
     }
 
     /** A one-line status for players: complete, or what is missing where. */
     public Component status() {
-        if (unknownStructure) {
-            return Component.literal("Unknown structure " + structureKey().identifier() + ": check the data pack");
-        }
-        if (formed) {
-            return Component.literal("Structure complete");
-        }
-        if (lastMatch == null || lastMatch.problem() == null) {
-            return Component.literal("Checking the structure...");
-        }
-        BlockPos pos = lastMatch.problem();
-        String at = " at " + pos.getX() + ", " + pos.getY() + ", " + pos.getZ();
-        if (lastMatch.status() == MultiblockStructure.Status.NOT_LOADED) {
-            return Component.literal("Waiting for the chunk" + at + " to load");
-        }
-        return Component.literal("Needs ").append(lastMatch.expected().describe()).append(at);
+        return link.status();
     }
 
     @Override
     protected final boolean work(ServerLevel level, int elapsedTicks) {
-        if (checkNeeded) {
-            checkNeeded = false;
-            check(level);
-            if (checkNeeded) {
-                // Part of the structure isn't loaded. Loading a chunk changes no block, so nothing
-                // would wake us: stay awake and try again next batch.
-                return true;
-            }
+        if (link.checkIfNeeded(level)) {
+            return true;
         }
-        if (!formed) {
+        if (!link.isFormed()) {
             return false; // sleep until a block in the structure changes
         }
         boolean keepWorking = workFormed(level, elapsedTicks);
         // A block in the structure may have changed during the work itself, when waking is ignored.
-        return keepWorking || checkNeeded;
-    }
-
-    /** Called by the tracker when a block in the structure changes. */
-    final void structureChanged() {
-        checkNeeded = true;
-        wake();
-    }
-
-    private void check(ServerLevel level) {
-        MultiblockStructure structure = structure(level);
-        if (structure == null) {
-            if (WARNED_UNKNOWN.add(structureKey())) {
-                OutworldCore.LOG.warn("No multiblock structure {} is loaded; its controllers can't form", structureKey().identifier());
-            }
-            unknownStructure = true;
-            lastMatch = null;
-            MultiblockTracker.release(level, this);
-            claimedStructure = null;
-            setFormed(false, null);
-            return;
-        }
-        unknownStructure = false;
-
-        Direction facing = facing();
-        if (structure != claimedStructure || facing != claimedFacing) {
-            List<BlockPos> positions = new ArrayList<>(structure.positions(worldPosition, facing));
-            positions.add(worldPosition); // the controller itself: turning it moves the structure
-            MultiblockTracker.claim(level, this, positions);
-            claimedStructure = structure;
-            claimedFacing = facing;
-        }
-
-        MultiblockStructure.Match match = structure.match(level, worldPosition, facing);
-        lastMatch = match;
-        if (match.status() == MultiblockStructure.Status.NOT_LOADED) {
-            checkNeeded = true;
-            return;
-        }
-        setFormed(match.complete(), match);
-    }
-
-    private void setFormed(boolean nowFormed, MultiblockStructure.Match match) {
-        if (nowFormed == formed) {
-            return;
-        }
-        formed = nowFormed;
-        setChanged();
-        if (formed) {
-            onFormed(match);
-        } else {
-            onUnformed();
-        }
+        return keepWorking || link.checkPending();
     }
 
     @Override
     public void clearRemoved() {
-        // Claims are dropped whenever the controller is removed, so check (and claim) again when it returns.
-        checkNeeded = true;
+        link.loaded();
         super.clearRemoved();
     }
 
     @Override
     public void setRemoved() {
         super.setRemoved();
-        claimedStructure = null;
-        claimedFacing = null;
-        if (level instanceof ServerLevel serverLevel) {
-            onServerThread(serverLevel, () -> MultiblockTracker.release(serverLevel, this));
-        }
+        link.removed(level);
     }
 
-    /** Saves whether the structure is complete, for {@code /data get} and debugging. It is checked again on load. */
     @Override
     protected void saveAdditional(ValueOutput output) {
         super.saveAdditional(output);
-        output.putBoolean("formed", formed);
+        link.save(output);
     }
 }

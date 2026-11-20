@@ -1,0 +1,19 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "misc",
+  "pattern": [
+    "RXR",
+    "IFI",
+    "RXR"
+  ],
+  "key": {
+    "R": "outworld_industry:refractory_bricks",
+    "X": "minecraft:redstone_block",
+    "I": "minecraft:iron_ingot",
+    "F": "minecraft:blast_furnace"
+  },
+  "result": {
+    "id": "outworld_industry:arc_furnace",
+    "count": 1
+  }
+}
