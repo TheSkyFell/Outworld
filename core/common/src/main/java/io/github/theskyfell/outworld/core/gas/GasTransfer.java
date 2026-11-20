@@ -35,11 +35,15 @@ public final class GasTransfer {
 
     /**
      * The gas storage at {@code pos}, as seen from {@code side} (the face of that block you are
-     * touching), or null if there is none or its chunk isn't loaded.
+     * touching), or null if there is none or its chunk isn't loaded. At gas pipes and tank blocks
+     * ({@link GasConductor}s) it is their grid's shared tank.
      */
     public static GasAccess find(ServerLevel level, BlockPos pos, Direction side) {
         if (!level.isLoaded(pos)) {
             return null;
+        }
+        if (level.getBlockState(pos).getBlock() instanceof GasConductor) {
+            return GasGrids.tankAt(level, pos);
         }
         BlockEntity blockEntity = level.getBlockEntity(pos);
         if (blockEntity == null) {

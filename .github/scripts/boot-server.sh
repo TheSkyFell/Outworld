@@ -37,6 +37,10 @@
 # - the electrolyzer splits water into gases: over a test tank and a water cauldron at 10 _ 14, it
 #   fills the test gas tank on top of it with hydrogen or oxygen. Both machines share a creative
 #   battery at 9 101 14
+# - pipes and tanks: water pumped up from a cauldron at 12 _ 12 into two fluid pipes reaches an ore
+#   washer at their end, which washes 2 crushed gold into 3 purified gold; an electrolyzer at 12 101 15
+#   fills a gas tank block through a gas pipe; the cable from the power test charges an empty battery
+#   under it; the grids' contents are saved with the world when the server stops
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -135,6 +139,10 @@ furnace_output=""
 washer_output=""
 electrolyzer_gas=""
 processing_state=""
+pipe_washer_output=""
+gas_grid=""
+cable_battery=""
+grids_state=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -271,6 +279,30 @@ if [[ "$result" == "done" ]]; then
     done
     processing_state="furnace: $(rcon data get block 6 101 14 2>&1 | cut -c1-300 || true) | washer: $(rcon data get block 8 101 14 2>&1 | cut -c1-400 || true) | electrolyzer: $(rcon data get block 10 101 14 2>&1 | cut -c1-500 || true)"
 
+    # Pipes and tanks: water through fluid pipes to a washer, gas through a gas pipe into a tank block,
+    # and an empty battery under the power test's cable.
+    rcon setblock 12 99 6 'outworld_industry:test_battery{energy:0L}' > /dev/null 2>&1 || true
+    rcon setblock 12 99 12 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 12 100 12 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 14 100 12 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 14 101 12 'outworld_industry:ore_washer{Items:[{Slot:0b,id:"outworld_industry:crushed_gold",count:2}]}' > /dev/null 2>&1 || true
+    rcon fill 12 101 12 13 101 12 outworld_industry:fluid_pipe > /dev/null 2>&1 || true
+    rcon setblock 12 99 15 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 12 100 15 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 11 101 15 'outworld_industry:test_battery{creative:1b}' > /dev/null 2>&1 || true
+    rcon setblock 13 101 15 outworld_industry:gas_pipe > /dev/null 2>&1 || true
+    rcon setblock 14 101 15 outworld_industry:gas_tank > /dev/null 2>&1 || true
+    rcon setblock 12 101 15 outworld_industry:electrolyzer > /dev/null 2>&1 || true
+    for _ in $(seq 1 30); do
+        sleep 1
+        pipe_washer_output="$(rcon data get block 14 101 12 'Items[{Slot:1b}]' 2>&1 || true)"
+        gas_grid="$(rcon outworld grid 14 101 15 2>&1 || true)"
+        cable_battery="$(rcon data get block 12 99 6 energy 2>&1 || true)"
+        [[ "$pipe_washer_output" == *"purified_gold"* && "$pipe_washer_output" == *"count: 3"* \
+            && "$gas_grid" =~ outworld:(hydrogen|oxygen)\ [1-9] && "$cable_battery" =~ :\ [1-9][0-9]*L?$ ]] && break
+    done
+    grids_state="fluid pipe: $(rcon outworld grid 13 101 12 2>&1 || true) | washer: $(rcon data get block 14 101 12 2>&1 | cut -c1-300 || true) | cable: $(rcon outworld grid 12 100 6 2>&1 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -301,8 +333,8 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 13 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 19 entries in minecraft:item for outworld_industry'
+check_log "Industry blocks registered" 'Registered 17 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 23 entries in minecraft:item for outworld_industry'
 check_log "Industry block entity types registered" 'Registered 12 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
@@ -428,6 +460,27 @@ if [[ "$electrolyzer_gas" =~ amount:\ [1-9] && ( "$electrolyzer_gas" == *"outwor
 else
     fail "hydrogen or oxygen from the electrolyzer in the gas tank above it (tank: ${electrolyzer_gas:-none})"
 fi
+if [[ "$pipe_washer_output" == *"purified_gold"* && "$pipe_washer_output" == *"count: 3"* ]]; then
+    pass "water pumped into fluid pipes reached the ore washer at their end (3 purified gold)"
+else
+    fail "3 purified gold from an ore washer fed water through fluid pipes (slot: ${pipe_washer_output:-none})"
+fi
+if [[ "$gas_grid" =~ outworld:(hydrogen|oxygen)\ [1-9] ]]; then
+    pass "the electrolyzer filled a gas tank block through a gas pipe (${gas_grid})"
+else
+    fail "hydrogen or oxygen in the gas tank block's grid (grid: ${gas_grid:-none})"
+fi
+if [[ "$cable_battery" =~ :\ [1-9][0-9]*L?$ ]]; then
+    pass "the cable grid charged an empty battery next to it (${cable_battery})"
+else
+    fail "an empty battery under the cable charges from the grid (battery: ${cable_battery:-none})"
+fi
+saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
+if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
+    pass "fluid and gas grid contents were saved with the world (${saved_grids})"
+else
+    fail "fluid_grids.dat and gas_grids.dat saved with the world (found: ${saved_grids:-none})"
+fi
 data_errors="$(grep -i -E "couldn't (parse|load)|parsing error|failed to (parse|load)" "$log" | grep -i 'outworld' | cut -c1-300 | head -n 5)"
 if [[ -z "$data_errors" ]]; then
     pass "no Outworld data file failed to load"
@@ -509,6 +562,8 @@ fi
     echo "Power blocks: ${power_state:-none}"
     echo "Processing: furnace slot ${furnace_output:-none} | washer slot ${washer_output:-none} | gas above electrolyzer ${electrolyzer_gas:-none}"
     echo "Processing blocks: ${processing_state:-none}"
+    echo "Pipes: washer slot ${pipe_washer_output:-none} | gas tank ${gas_grid:-none} | battery under cable ${cable_battery:-none}"
+    echo "Grids: ${grids_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"

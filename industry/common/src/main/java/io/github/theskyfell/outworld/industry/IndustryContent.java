@@ -13,6 +13,10 @@ import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlock;
 import io.github.theskyfell.outworld.industry.machine.ElectrolyzerBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlock;
 import io.github.theskyfell.outworld.industry.machine.OreWasherBlockEntity;
+import io.github.theskyfell.outworld.industry.pipe.FluidPipeBlock;
+import io.github.theskyfell.outworld.industry.pipe.FluidTankBlock;
+import io.github.theskyfell.outworld.industry.pipe.GasPipeBlock;
+import io.github.theskyfell.outworld.industry.pipe.GasTankBlock;
 import io.github.theskyfell.outworld.industry.power.CableBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlock;
 import io.github.theskyfell.outworld.industry.power.CombustionGeneratorBlockEntity;
@@ -116,6 +120,32 @@ public final class IndustryContent {
 
     public static final RegistryEntry<Item, BlockItem> CABLE_ITEM = ITEMS.register("cable",
             key -> new BlockItem(CABLE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    // Pipes and tanks
+
+    public static final RegistryEntry<Block, FluidPipeBlock> FLUID_PIPE_BLOCK = BLOCKS.register("fluid_pipe",
+            key -> new FluidPipeBlock(BlockBehaviour.Properties.of().setId(key).strength(1.0F).sound(SoundType.COPPER).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> FLUID_PIPE_ITEM = ITEMS.register("fluid_pipe",
+            key -> new BlockItem(FLUID_PIPE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, GasPipeBlock> GAS_PIPE_BLOCK = BLOCKS.register("gas_pipe",
+            key -> new GasPipeBlock(BlockBehaviour.Properties.of().setId(key).strength(1.0F).sound(SoundType.METAL).noOcclusion()));
+
+    public static final RegistryEntry<Item, BlockItem> GAS_PIPE_ITEM = ITEMS.register("gas_pipe",
+            key -> new BlockItem(GAS_PIPE_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, FluidTankBlock> FLUID_TANK_BLOCK = BLOCKS.register("fluid_tank",
+            key -> new FluidTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> FLUID_TANK_ITEM = ITEMS.register("fluid_tank",
+            key -> new BlockItem(FLUID_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<Block, GasTankBlock> GAS_TANK_BLOCK = BLOCKS.register("gas_tank",
+            key -> new GasTankBlock(BlockBehaviour.Properties.of().setId(key).strength(3.0F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> GAS_TANK_ITEM = ITEMS.register("gas_tank",
+            key -> new BlockItem(GAS_TANK_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
 
     // Materials
 
