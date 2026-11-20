@@ -45,6 +45,8 @@
 #   pipe into a gas liquefier, and the liquid through a fluid pipe into a fluid tank block at 12 101 0
 # - a battery bank: a combustion generator burning coal at 13 100 9 charges two batteries next to it,
 #   which form one 200,000 FE grid and power a crusher on top of them
+# - steam power: a boiler at 12 101 3 burning coal boils water from a cauldron below into steam, which
+#   a gas pipe carries to a steam turbine that charges a battery at 15 101 3
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -151,6 +153,8 @@ propellant_grid=""
 propellant_state=""
 bank_grid=""
 bank_crusher=""
+steam_grid=""
+steam_state=""
 gas_bottom=""
 stress_start=""
 stress_status=""
@@ -339,6 +343,20 @@ if [[ "$result" == "done" ]]; then
         [[ "$bank_grid" =~ grid\ of\ 2\ blocks.*:\ [1-9][0-9,]*\ /\ 200,000\ FE && "$bank_crusher" == *"crushed_copper"* && "$bank_crusher" == *"count: 2"* ]] && break
     done
 
+    # Steam: cauldron > test tank > boiler > gas pipe > steam turbine > battery.
+    rcon setblock 12 99 3 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 12 100 3 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 13 101 3 outworld_industry:gas_pipe > /dev/null 2>&1 || true
+    rcon setblock 14 101 3 outworld_industry:steam_turbine > /dev/null 2>&1 || true
+    rcon setblock 15 101 3 outworld_industry:battery > /dev/null 2>&1 || true
+    rcon setblock 12 101 3 'outworld_industry:boiler{Items:[{Slot:0b,id:"minecraft:coal",count:1}]}' > /dev/null 2>&1 || true
+    for _ in $(seq 1 40); do
+        sleep 1
+        steam_grid="$(rcon outworld grid 15 101 3 2>&1 || true)"
+        [[ "$steam_grid" =~ :\ [1-9][0-9,]*\ /\ 100,000\ FE ]] && break
+    done
+    steam_state="gas pipe: $(rcon outworld grid 13 101 3 2>&1 || true) | boiler: $(rcon data get block 12 101 3 2>&1 | cut -c1-400 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -369,9 +387,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 19 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 25 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 13 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 21 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 27 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 15 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry fluids registered" 'Registered 2 entries in minecraft:fluid for outworld_industry'
 check_log "Industry creative tab registered" 'Registered 1 entries in minecraft:creative_mode_tab for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
@@ -527,6 +545,11 @@ if [[ "$bank_crusher" == *"crushed_copper"* && "$bank_crusher" == *"count: 2"* ]
 else
     fail "2 crushed copper from a crusher on the battery bank (slot: ${bank_crusher:-none})"
 fi
+if [[ "$steam_grid" =~ :\ [1-9][0-9,]*\ /\ 100,000\ FE ]]; then
+    pass "a boiler's steam drove a steam turbine through a gas pipe and charged a battery (${steam_grid})"
+else
+    fail "energy in the battery after boiler > gas pipe > steam turbine (battery: ${steam_grid:-none})"
+fi
 saved_grids="$(find "$run_dir" -name 'gas_grids.dat' -o -name 'fluid_grids.dat' 2>/dev/null | sort | tr '\n' ' ')"
 if [[ "$saved_grids" == *"fluid_grids.dat"* && "$saved_grids" == *"gas_grids.dat"* ]]; then
     pass "fluid and gas grid contents were saved with the world (${saved_grids})"
@@ -618,6 +641,7 @@ fi
     echo "Grids: ${grids_state:-none}"
     echo "Propellant: tank ${propellant_grid:-none} | ${propellant_state:-none}"
     echo "Battery bank: ${bank_grid:-none} | crusher slot ${bank_crusher:-none}"
+    echo "Steam: battery ${steam_grid:-none} | ${steam_state:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"

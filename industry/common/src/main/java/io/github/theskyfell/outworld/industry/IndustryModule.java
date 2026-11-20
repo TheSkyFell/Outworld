@@ -52,6 +52,9 @@ public final class IndustryModule implements OutworldModule {
         transfers.energy(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.energy());
         transfers.items(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.items());
         transfers.fluids(IndustryContent.COMBUSTION_GENERATOR.get(), (generator, side) -> generator.exposedFluidTank(side));
+        transfers.items(IndustryContent.BOILER.get(), (boiler, side) -> boiler.items());
+        transfers.fluids(IndustryContent.BOILER.get(), (boiler, side) -> boiler.exposedFluidTank(side));
+        transfers.energy(IndustryContent.STEAM_TURBINE.get(), (turbine, side) -> turbine.energy());
         transfers.energy(IndustryContent.SOLAR_PANEL.get(), (panel, side) -> panel.energy());
         transfers.blockEnergy((level, pos, side) -> EnergyGrids.bufferAt(level, pos),
                 IndustryContent.CABLE_BLOCK.get(), IndustryContent.BATTERY_BLOCK.get());
