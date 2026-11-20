@@ -22,6 +22,8 @@ final class NeoForgeEvents {
                 event -> OutworldEvents.SERVER_STARTED.forEach(l -> l.accept(event.getServer())));
         NeoForge.EVENT_BUS.addListener(ServerStoppingEvent.class,
                 event -> OutworldEvents.SERVER_STOPPING.forEach(l -> l.accept(event.getServer())));
+        NeoForge.EVENT_BUS.addListener(ServerTickEvent.Pre.class,
+                event -> OutworldEvents.SERVER_TICK_START.forEach(l -> l.accept(event.getServer())));
         NeoForge.EVENT_BUS.addListener(ServerTickEvent.Post.class,
                 event -> OutworldEvents.SERVER_TICK_END.forEach(l -> l.accept(event.getServer())));
         NeoForge.EVENT_BUS.addListener(LevelTickEvent.Post.class, event -> {

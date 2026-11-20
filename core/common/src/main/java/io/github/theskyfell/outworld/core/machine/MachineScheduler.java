@@ -1,5 +1,8 @@
 package io.github.theskyfell.outworld.core.machine;
 
+import io.github.theskyfell.outworld.core.OutworldCore;
+import io.github.theskyfell.outworld.core.perf.Perf;
+import io.github.theskyfell.outworld.core.perf.PerfSection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -8,7 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Set;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.level.block.entity.BlockEntityType;
 
 /**
  * Runs the awake machines of one level. Driven by the level tick (see {@code CoreModule}); all methods
@@ -16,9 +21,13 @@ import net.minecraft.server.level.ServerLevel;
  *
  * <p>Awake machines sit in a queue ordered by the tick they are due. Each tick only the machines that
  * are due are touched, so sleeping machines and machines between batches cost nothing.
+ *
+ * <p>Batches are timed for {@code /outworld perf}: all together under {@code outworld:machines}, and
+ * per block entity type below it.
  */
 public final class MachineScheduler {
     private static final Map<ServerLevel, MachineScheduler> SCHEDULERS = new IdentityHashMap<>();
+    private static final PerfSection PERF = Perf.section(OutworldCore.MOD_ID + ":machines", null);
 
     private final ServerLevel level;
     private final Set<MachineBlockEntity> loaded = Collections.newSetFromMap(new IdentityHashMap<>());
@@ -86,15 +95,27 @@ public final class MachineScheduler {
         batches++;
     }
 
+    /** The section that times one machine type's batches. */
+    static PerfSection perfSection(BlockEntityType<?> type) {
+        return Perf.subsection(PERF, String.valueOf(BuiltInRegistries.BLOCK_ENTITY_TYPE.getKey(type)), "batches");
+    }
+
     private void runDue() {
         long now = level.getGameTime();
-        while (!queue.isEmpty() && queue.peek().due() <= now) {
-            Entry entry = queue.poll();
-            MachineBlockEntity machine = entry.machine();
-            if (machine.scheduledTime() != entry.due() || machine.isRemoved()) {
-                continue; // stale: the machine was removed, or rescheduled since
+        if (queue.isEmpty() || queue.peek().due() > now) {
+            return;
+        }
+        try (var _ = PERF.start()) {
+            while (!queue.isEmpty() && queue.peek().due() <= now) {
+                Entry entry = queue.poll();
+                MachineBlockEntity machine = entry.machine();
+                if (machine.scheduledTime() != entry.due() || machine.isRemoved()) {
+                    continue; // stale: the machine was removed, or rescheduled since
+                }
+                try (var _ = machine.perfSection().start()) {
+                    machine.runBatch(level, now, this);
+                }
             }
-            machine.runBatch(level, now, this);
         }
     }
 

@@ -21,6 +21,9 @@ public final class OutworldEvents {
     public static final Event<Consumer<MinecraftServer>> SERVER_STARTED = new Event<>();
     public static final Event<Consumer<MinecraftServer>> SERVER_STOPPING = new Event<>();
 
+    /** Before the server ticks anything. */
+    public static final Event<Consumer<MinecraftServer>> SERVER_TICK_START = new Event<>();
+
     /** After the server has ticked every level. */
     public static final Event<Consumer<MinecraftServer>> SERVER_TICK_END = new Event<>();
 

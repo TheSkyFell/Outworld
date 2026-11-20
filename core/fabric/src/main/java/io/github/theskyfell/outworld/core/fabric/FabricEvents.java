@@ -14,6 +14,7 @@ final class FabricEvents {
         ServerLifecycleEvents.SERVER_STARTING.register(server -> OutworldEvents.SERVER_STARTING.forEach(l -> l.accept(server)));
         ServerLifecycleEvents.SERVER_STARTED.register(server -> OutworldEvents.SERVER_STARTED.forEach(l -> l.accept(server)));
         ServerLifecycleEvents.SERVER_STOPPING.register(server -> OutworldEvents.SERVER_STOPPING.forEach(l -> l.accept(server)));
+        ServerTickEvents.START_SERVER_TICK.register(server -> OutworldEvents.SERVER_TICK_START.forEach(l -> l.accept(server)));
         ServerTickEvents.END_SERVER_TICK.register(server -> OutworldEvents.SERVER_TICK_END.forEach(l -> l.accept(server)));
         ServerTickEvents.END_LEVEL_TICK.register(level -> OutworldEvents.LEVEL_TICK_END.forEach(l -> l.accept(level)));
         CommandRegistrationCallback.EVENT.register((dispatcher, context, selection) ->

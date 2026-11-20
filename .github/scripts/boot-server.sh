@@ -15,6 +15,8 @@
 #   under two test tanks, which pull from below and push above. The bucket of water ends in the top
 #   tank, 81,000 droplets, and the cauldron is left empty.
 # - afterwards all five machines are asleep
+# - /outworld perf reports the server tick, the machines section and the test machine's batches,
+#   asked while the test machine is working
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -75,6 +77,7 @@ job_machines=""
 done_work=""
 done_machines=""
 battery_energy=""
+perf_reply=""
 crate_count=""
 crate_item=""
 tank_bottom=""
@@ -98,6 +101,7 @@ if [[ "$result" == "done" ]]; then
     rcon setblock -1 100 0 outworld_industry:test_battery > /dev/null 2>&1 || true
     sleep 1
     job_machines="$(rcon outworld machines 2>&1 || true)"
+    perf_reply="$(rcon outworld perf 2>&1 || true)"
     for _ in $(seq 1 30); do
         sleep 1
         done_work="$(rcon data get block 0 100 0 work_done 2>&1 || true)"
@@ -205,6 +209,13 @@ else
     fail "5 machines loaded, all asleep (machines: ${final_machines:-none})"
 fi
 
+if [[ "$perf_reply" == *"Server tick: "* && "$perf_reply" == *"outworld:machines: "* \
+        && "$perf_reply" =~ outworld_industry:test_block:\ [0-9.]+\ ms\ average.*batches\ per\ tick ]]; then
+    pass "/outworld perf reports the server tick, machines and the test machine's batches"
+else
+    fail "/outworld perf with server tick, machines and test_block batches (reply: ${perf_reply:-none})"
+fi
+
 config="$run_dir/config/outworld/core.json"
 if grep -q '"workIntervalTicks"' "$config" 2>/dev/null; then
     pass "config file written: $config"
@@ -227,6 +238,8 @@ fi
     echo "Items: bottom crate count ${crate_count:-none}, item ${crate_item:-none}"
     echo "Fluid: top tank ${tank_top:-none} | bottom tank ${tank_bottom:-none} | cauldron empty: ${cauldron_empty:-none}"
     echo "Machines at the end: ${final_machines:-none}"
+    echo "/outworld perf while the test machine worked:"
+    echo "${perf_reply:-none}"
 } >> "$log"
 
 echo
