@@ -18,14 +18,16 @@ import net.minecraft.world.level.levelgen.structure.BoundingBox;
 
 /**
  * The {@code belts} stress scenario: square loops of belt, {@value #RING} blocks a side, each belt
- * carrying four items (two per lane, half the lane's room), so every belt keeps moving and handing
- * items on, round the corners too. {@code count} is the number of belts, rounded up to whole loops.
+ * carrying six items (three per lane, three quarters of the lane's room), so every belt keeps moving
+ * and handing items on, round the corners too. (With much less on them, items bunch up into trains
+ * as they pass from belt to belt, and the empty belts between trains rightly sleep.) {@code count} is the number of belts, rounded up to whole loops.
  * Quieting it takes the items off.
  */
 public final class BeltsStressScenario implements StressScenario {
     private static final int RING = 10;
     private static final int PER_RING = 4 * (RING - 1);
     private static final int SPACING = RING + 1;
+    private static final int ITEMS_PER_LANE = 3;
 
     @Override
     public String description() {
@@ -70,8 +72,9 @@ public final class BeltsStressScenario implements StressScenario {
         for (BlockPos pos : belts) {
             if (level.getBlockEntity(pos) instanceof BeltBlockEntity belt) {
                 for (int lane = 0; lane < 2; lane++) {
-                    belt.receive(lane, item, 0);
-                    belt.receive(lane, item, BeltLane.LENGTH / 2);
+                    for (int i = 0; i < ITEMS_PER_LANE; i++) {
+                        belt.receive(lane, item, i * BeltLane.LENGTH / ITEMS_PER_LANE);
+                    }
                 }
             }
         }
