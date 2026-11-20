@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.core.neoforge.client;
 
 import io.github.theskyfell.outworld.core.OutworldCore;
+import io.github.theskyfell.outworld.core.client.CoreClient;
 import io.github.theskyfell.outworld.core.client.OutworldClientEvents;
 import net.minecraft.client.Minecraft;
 import net.neoforged.api.distmarker.Dist;
@@ -14,5 +15,6 @@ public final class OutworldCoreNeoForgeClient {
     public OutworldCoreNeoForgeClient() {
         NeoForge.EVENT_BUS.addListener(ClientTickEvent.Post.class,
                 event -> OutworldClientEvents.CLIENT_TICK_END.forEach(l -> l.accept(Minecraft.getInstance())));
+        CoreClient.init();
     }
 }
