@@ -3,7 +3,6 @@
     "outworld_industry:test_block",
     "outworld_industry:test_battery",
     "outworld_industry:test_tank",
-    "outworld_industry:test_multiblock",
-    "outworld_industry:test_gas_tank"
+    "outworld_industry:test_multiblock"
   ]
 }

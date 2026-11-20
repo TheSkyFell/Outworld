@@ -22,8 +22,6 @@
 #   a shell block is removed or the core is filled, and forms again when they're put back, three
 #   times in all; turning the controller north unforms it and turning it back east forms it again;
 #   27 positions are watched for changes
-# - gas moves through Core's gas storage: a test gas tank holding 4 buckets of hydrogen at 0 100 10,
-#   with a second one on top, ends with all 4,000 mB in the top tank
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -112,8 +110,6 @@ mb_times=""
 mb_turned=""
 mb_turned_back=""
 mb_machines=""
-gas_top=""
-gas_bottom=""
 stress_start=""
 stress_status=""
 crate_count=""
@@ -190,12 +186,6 @@ if [[ "$result" == "done" ]]; then
     mb_turned_back="$(wait_for ': 1b' data get block 4 100 12 formed)"
     mb_machines="$(rcon outworld machines 2>&1 || true)"
 
-    # Gas: a full tank under an empty one.
-    rcon setblock 0 100 10 'outworld_industry:test_gas_tank{gas:{gas:"outworld:hydrogen",amount:4000L}}' > /dev/null 2>&1 || true
-    rcon setblock 0 101 10 outworld_industry:test_gas_tank > /dev/null 2>&1 || true
-    gas_top="$(wait_for ': 4000L' data get block 0 101 10 gas.amount)"
-    gas_bottom="$(rcon data get block 0 100 10 gas.amount 2>&1 || true)"
-
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -225,9 +215,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 6 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 6 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 6 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 5 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 5 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 5 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
@@ -314,12 +304,6 @@ else
     fail "27 multiblock positions watched (machines: ${mb_machines:-none})"
 fi
 
-if [[ "$gas_top" =~ :\ 4000L?$ && "$gas_bottom" =~ :\ 0L?$ ]]; then
-    pass "4 buckets of hydrogen moved up through Core's gas storage"
-else
-    fail "4,000 mB of hydrogen in the top gas tank, none in the bottom one (top: ${gas_top:-none}; bottom: ${gas_bottom:-none})"
-fi
-
 stress_report="$run_dir/outworld-stress/machines.json"
 stress_check="$(python3 - "$stress_report" <<'PY' 2>&1
 import json, os, sys
@@ -383,18 +367,11 @@ fi
     echo "Machines at the end: ${final_machines:-none}"
     echo "Multiblock: formed ${mb_formed:-none} | shell block removed ${mb_broken:-none} | replaced ${mb_restored:-none} | core filled ${mb_blocked:-none} | cleared ${mb_cleared:-none} | ${mb_times:-none}"
     echo "Multiblock turned north: ${mb_turned:-none} | back east: ${mb_turned_back:-none} | ${mb_machines:-none}"
-    echo "Gas: top tank ${gas_top:-none} | bottom tank ${gas_bottom:-none}"
     echo "Stress test start: ${stress_start:-none}"
     echo "Stress test result: ${stress_status:-none}"
     echo "/outworld perf while the test machine worked:"
     echo "${perf_reply:-none}"
 } >> "$log"
-
-# Shown on the run's page, and readable through the checks API.
-if [[ -n "$stress_status" ]]; then
-    stress_notice="${stress_status//'%'/'%25'}"
-    echo "::notice title=Stress test (${loader})::${stress_notice//$'\n'/'%0A'}"
-fi
 
 echo
 echo "Outworld lines from the log:"
