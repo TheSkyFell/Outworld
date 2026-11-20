@@ -1,0 +1,26 @@
+# Gradle
+.gradle/
+build/
+
+# Game runs
+runs/
+run/
+
+# IntelliJ IDEA
+.idea/*
+!.idea/scopes
+out/
+*.iml
+*.ipr
+*.iws
+
+# Eclipse / VS Code
+bin/
+.settings/
+.classpath
+.project
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
