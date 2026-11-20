@@ -3,7 +3,6 @@ package io.github.theskyfell.outworld.core;
 import io.github.theskyfell.outworld.core.command.OutworldCommand;
 import io.github.theskyfell.outworld.core.config.ConfigFile;
 import io.github.theskyfell.outworld.core.event.OutworldEvents;
-import io.github.theskyfell.outworld.core.gas.Gas;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
 import io.github.theskyfell.outworld.core.module.DataRegistries;
 import io.github.theskyfell.outworld.core.module.Modules;
@@ -24,7 +23,6 @@ public final class CoreModule implements OutworldModule {
     @Override
     public void registerDataRegistries(DataRegistries registries) {
         registries.synced(MultiblockStructure.REGISTRY, MultiblockStructure.CODEC);
-        registries.synced(Gas.REGISTRY, Gas.CODEC);
     }
 
     @Override
