@@ -1,13 +1,16 @@
 package io.github.theskyfell.outworld.core.fabric;
 
+import com.mojang.serialization.Codec;
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
 import io.github.theskyfell.outworld.core.item.ItemBuffer;
+import io.github.theskyfell.outworld.core.module.DataRegistries;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
+import net.fabricmc.fabric.api.event.registry.DynamicRegistries;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.fabricmc.fabric.api.transfer.v1.fluid.FluidStorage;
@@ -44,8 +47,17 @@ public final class FabricModules {
             registerServerbound(payload);
         }
 
+        module.registerDataRegistries(new FabricDataRegistries());
         module.init();
         module.registerTransfers(new LookupTransfers());
+    }
+
+    /** Declares data pack registries with Fabric's dynamic registry API. */
+    private static final class FabricDataRegistries implements DataRegistries {
+        @Override
+        public <T> void synced(ResourceKey<Registry<T>> key, Codec<T> codec) {
+            DynamicRegistries.registerSynced(key, codec);
+        }
     }
 
     /** Exposes Outworld storages through Fabric's block API lookups. */

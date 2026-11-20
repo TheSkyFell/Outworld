@@ -14,8 +14,8 @@ needs only Outworld Core, so you can install just the parts you want.
 
 | Mod | Id | Status |
 |---|---|---|
-| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, energy, items and fluids that work with other mods' cables, pipes and machines, performance measurement, `/outworld version`, `/outworld machines` and `/outworld perf` |
-| Outworld Industry | `outworld_industry` | Started: temporary test blocks: a test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job that costs 10 FE per tick), a test battery (10,000 FE), a test crate (three slots; moves items downwards) and a test tank (four buckets; moves fluid upwards) |
+| Outworld Core | `outworld` | Started: the loader layer (registration, events, config, networking, menus and screens), the machine base with sleep and batching, energy, items and fluids that work with other mods' cables, pipes and machines, multiblocks defined in data files, performance measurement, `/outworld version`, `/outworld machines` and `/outworld perf` |
+| Outworld Industry | `outworld_industry` | Started: temporary test blocks: a test machine (opens a screen that pings the server; a neighbour change gives it a 100-tick job that costs 10 FE per tick), a test battery (10,000 FE), a test crate (three slots; moves items downwards), a test tank (four buckets; moves fluid upwards) and a test multiblock controller (forms a 3x3x3 iron frame with an air core; right-click shows what's missing) |
 | Outworld Habitats | | Planned |
 | Outworld Logistics | | Planned |
 | Outworld Worlds | | Planned |
@@ -52,7 +52,7 @@ The `core-*` projects have the same run tasks and load Core on its own.
 | Command | Shows |
 |---|---|
 | `/outworld version` | The Outworld mods loaded, and their versions |
-| `/outworld machines` | Machines loaded and awake in each dimension (needs the same permission as `/gamemode`) |
+| `/outworld machines` | Machines loaded and awake in each dimension, and how many multiblock positions are watched (needs the same permission as `/gamemode`) |
 | `/outworld perf` | What Outworld costs the server over the last 100 ticks: the average and worst server tick, Outworld's share of it, and each system's time, with machines broken down by type (same permission) |
 
 Outworld's work also appears as named sections in Minecraft's own profiler (`/debug start`, `/jfr`).
@@ -91,6 +91,7 @@ Core gives common code:
 | Network messages | `Payloads` in the module, `Network` to send; client: `ClientNetwork` |
 | Menus that carry data to the client | `Menus` (`core.menu`); screens via `OutworldClientModule` |
 | Machines | `MachineBlock` and `MachineBlockEntity` (`core.machine`): they work in batches every few ticks and sleep when idle, never ticking every tick |
+| Multiblocks | `MultiblockControllerBlockEntity` (`core.multiblock`): a machine that works only while its structure is complete. Structures are data files in `data/<namespace>/outworld/multiblock/` (see `MultiblockStructure` for the format), loaded when a world loads; a structure is re-checked only when one of its blocks changes |
 | Measuring cost | `Perf.section` (`core.perf`): time a system's work with `try (var _ = SECTION.start())`. Machines are timed automatically, per block entity type |
 | Block entity types | `BlockEntityTypes` (`core.registry`) |
 | Energy (FE) | `EnergyBuffer` (`core.energy`), exposed to other mods with `registerTransfers` in the module; `Energy.find` reaches any mod's energy storage |

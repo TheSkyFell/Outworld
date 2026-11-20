@@ -155,7 +155,8 @@ public abstract class MachineBlockEntity extends BlockEntity {
         return next + Math.floorMod(slot - next, interval);
     }
 
-    private static void onServerThread(ServerLevel level, Runnable action) {
+    /** Runs {@code action} now if this is the server thread, otherwise queues it for the server thread. */
+    protected static void onServerThread(ServerLevel level, Runnable action) {
         MinecraftServer server = level.getServer();
         if (server.isSameThread()) {
             action.run();

@@ -33,12 +33,16 @@ public interface OutworldModule {
         return "1";
     }
 
+    /** Declares registries whose entries come from data packs, such as multiblock structures. */
+    default void registerDataRegistries(DataRegistries registries) {
+    }
+
     /** Runs once at startup, on both sides, after registration has been set up. Register event listeners here. */
     default void init() {
     }
 
     /**
-     * Exposes the mod's storages (energy buffers) to other mods through each loader's transfer API.
+     * Exposes the mod's storages (energy, items, fluids) to other mods through each loader's transfer API.
      * Runs after the block entity types are registered.
      */
     default void registerTransfers(Transfers transfers) {

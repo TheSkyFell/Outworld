@@ -17,6 +17,11 @@
 # - afterwards all five machines are asleep
 # - /outworld perf reports the server tick, the machines section and the test machine's batches,
 #   asked while the test machine is working
+# - multiblocks form from data: a test controller facing east at 4 100 12, on the front of a 3x3x3
+#   iron shell with an air core (the test_frame structure, turned a quarter), forms; it unforms when
+#   a shell block is removed or the core is filled, and forms again when they're put back, three
+#   times in all; turning the controller north unforms it and turning it back east forms it again;
+#   27 positions are watched for changes
 # - there are no mixin failures
 # Then it stops the server over RCON.
 #
@@ -49,6 +54,20 @@ rcon() {
     python3 .github/scripts/rcon.py 127.0.0.1 "$rcon_port" "$rcon_password" "$@"
 }
 
+# Runs a command every half second until its reply ends with the first argument (for up to 10
+# seconds), then prints the last reply.
+wait_for() {
+    local expected="$1"
+    shift
+    local reply=""
+    for _ in $(seq 1 20); do
+        reply="$(rcon "$@" 2>&1 || true)"
+        [[ "$reply" == *"$expected" ]] && break
+        sleep 0.5
+    done
+    echo "$reply"
+}
+
 # setsid puts Gradle, its daemon and the server in their own process group, so they can be stopped together.
 setsid ./gradlew "${project}:runServer" --console=plain > "$log" 2>&1 < /dev/null &
 gradle_pid=$!
@@ -78,6 +97,15 @@ done_work=""
 done_machines=""
 battery_energy=""
 perf_reply=""
+mb_formed=""
+mb_broken=""
+mb_restored=""
+mb_blocked=""
+mb_cleared=""
+mb_times=""
+mb_turned=""
+mb_turned_back=""
+mb_machines=""
 crate_count=""
 crate_item=""
 tank_bottom=""
@@ -132,6 +160,26 @@ if [[ "$result" == "done" ]]; then
     cauldron_empty="$(rcon execute if block 0 99 8 minecraft:cauldron 2>&1 || true)"
     final_machines="$(rcon outworld machines 2>&1 || true)"
 
+    # Multiblock: build the shell, hollow it, then put the controller on its east face.
+    rcon fill 2 99 11 4 101 13 minecraft:iron_block > /dev/null 2>&1 || true
+    rcon setblock 3 100 12 minecraft:air > /dev/null 2>&1 || true
+    rcon setblock 4 100 12 'outworld_industry:test_multiblock[facing=east]' > /dev/null 2>&1 || true
+    mb_formed="$(wait_for ': 1b' data get block 4 100 12 formed)"
+    rcon setblock 2 101 13 minecraft:air > /dev/null 2>&1 || true
+    mb_broken="$(wait_for ': 0b' data get block 4 100 12 formed)"
+    rcon setblock 2 101 13 minecraft:iron_block > /dev/null 2>&1 || true
+    mb_restored="$(wait_for ': 1b' data get block 4 100 12 formed)"
+    rcon setblock 3 100 12 minecraft:stone > /dev/null 2>&1 || true
+    mb_blocked="$(wait_for ': 0b' data get block 4 100 12 formed)"
+    rcon setblock 3 100 12 minecraft:air > /dev/null 2>&1 || true
+    mb_cleared="$(wait_for ': 1b' data get block 4 100 12 formed)"
+    mb_times="$(rcon data get block 4 100 12 times_formed 2>&1 || true)"
+    rcon setblock 4 100 12 'outworld_industry:test_multiblock[facing=north]' > /dev/null 2>&1 || true
+    mb_turned="$(wait_for ': 0b' data get block 4 100 12 formed)"
+    rcon setblock 4 100 12 'outworld_industry:test_multiblock[facing=east]' > /dev/null 2>&1 || true
+    mb_turned_back="$(wait_for ': 1b' data get block 4 100 12 formed)"
+    mb_machines="$(rcon outworld machines 2>&1 || true)"
+
     rcon stop > /dev/null 2>&1 || true
     for _ in $(seq 1 30); do
         kill -0 "$gradle_pid" 2>/dev/null || break
@@ -153,9 +201,9 @@ echo "Server boot on ${loader}: ${result} after ${elapsed}s"
 check_log "server reached Done" 'Done \([0-9.,]+s\)!'
 check_log "Outworld Core started" 'Outworld Core starting on'
 check_log "Outworld Industry started" 'Outworld Industry starting on'
-check_log "Industry blocks registered" 'Registered 4 entries in minecraft:block for outworld_industry'
-check_log "Industry items registered" 'Registered 4 entries in minecraft:item for outworld_industry'
-check_log "Industry block entity types registered" 'Registered 4 entries in minecraft:block_entity_type for outworld_industry'
+check_log "Industry blocks registered" 'Registered 5 entries in minecraft:block for outworld_industry'
+check_log "Industry items registered" 'Registered 5 entries in minecraft:item for outworld_industry'
+check_log "Industry block entity types registered" 'Registered 5 entries in minecraft:block_entity_type for outworld_industry'
 check_log "Industry menus registered" 'Registered 1 entries in minecraft:menu for outworld_industry'
 check_log "server-started event reached Core" 'Outworld is ready: .*outworld_industry'
 
@@ -216,6 +264,32 @@ else
     fail "/outworld perf with server tick, machines and test_block batches (reply: ${perf_reply:-none})"
 fi
 
+if [[ "$mb_formed" == *": 1b" ]]; then
+    pass "test multiblock formed from its data file, facing east"
+else
+    fail "test multiblock forms (formed: ${mb_formed:-none})"
+fi
+if [[ "$mb_broken" == *": 0b" && "$mb_restored" == *": 1b" ]]; then
+    pass "removing a shell block unformed it; putting it back formed it again"
+else
+    fail "multiblock unforms and re-forms with a shell block (removed: ${mb_broken:-none}; replaced: ${mb_restored:-none})"
+fi
+if [[ "$mb_blocked" == *": 0b" && "$mb_cleared" == *": 1b" && "$mb_times" =~ :\ 3$ ]]; then
+    pass "filling the air core unformed it; clearing it formed it again (formed 3 times)"
+else
+    fail "multiblock needs its air core, formed 3 times (filled: ${mb_blocked:-none}; cleared: ${mb_cleared:-none}; times: ${mb_times:-none})"
+fi
+if [[ "$mb_turned" == *": 0b" && "$mb_turned_back" == *": 1b" ]]; then
+    pass "turning the controller north unformed it; turning it back east formed it again"
+else
+    fail "multiblock follows its controller's facing (north: ${mb_turned:-none}; east again: ${mb_turned_back:-none})"
+fi
+if [[ "$mb_machines" == *"27 multiblock positions watched"* ]]; then
+    pass "27 positions watched for block changes"
+else
+    fail "27 multiblock positions watched (machines: ${mb_machines:-none})"
+fi
+
 config="$run_dir/config/outworld/core.json"
 if grep -q '"workIntervalTicks"' "$config" 2>/dev/null; then
     pass "config file written: $config"
@@ -238,6 +312,8 @@ fi
     echo "Items: bottom crate count ${crate_count:-none}, item ${crate_item:-none}"
     echo "Fluid: top tank ${tank_top:-none} | bottom tank ${tank_bottom:-none} | cauldron empty: ${cauldron_empty:-none}"
     echo "Machines at the end: ${final_machines:-none}"
+    echo "Multiblock: formed ${mb_formed:-none} | shell block removed ${mb_broken:-none} | replaced ${mb_restored:-none} | core filled ${mb_blocked:-none} | cleared ${mb_cleared:-none} | ${mb_times:-none}"
+    echo "Multiblock turned north: ${mb_turned:-none} | back east: ${mb_turned_back:-none} | ${mb_machines:-none}"
     echo "/outworld perf while the test machine worked:"
     echo "${perf_reply:-none}"
 } >> "$log"

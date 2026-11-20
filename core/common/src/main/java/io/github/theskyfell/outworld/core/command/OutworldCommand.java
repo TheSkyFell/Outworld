@@ -3,6 +3,7 @@ package io.github.theskyfell.outworld.core.command;
 import com.mojang.brigadier.CommandDispatcher;
 import io.github.theskyfell.outworld.core.machine.MachineScheduler;
 import io.github.theskyfell.outworld.core.module.Modules;
+import io.github.theskyfell.outworld.core.multiblock.MultiblockTracker;
 import io.github.theskyfell.outworld.core.platform.Services;
 import java.util.List;
 import net.minecraft.commands.CommandSourceStack;
@@ -55,6 +56,10 @@ public final class OutworldCommand {
                     .append(": ").append(level.loaded()).append(" loaded, ")
                     .append(level.awake()).append(" awake, ")
                     .append(level.batches()).append(" work batches since start");
+            int watched = MultiblockTracker.watchedPositions(level.level());
+            if (watched > 0) {
+                text.append(", ").append(watched).append(" multiblock positions watched");
+            }
         }
         return text.toString();
     }

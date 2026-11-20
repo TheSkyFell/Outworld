@@ -1,15 +1,19 @@
 package io.github.theskyfell.outworld.core.neoforge;
 
+import com.mojang.serialization.Codec;
 import io.github.theskyfell.outworld.core.energy.EnergyBuffer;
 import io.github.theskyfell.outworld.core.fluid.FluidTank;
 import io.github.theskyfell.outworld.core.item.ItemBuffer;
+import io.github.theskyfell.outworld.core.module.DataRegistries;
 import io.github.theskyfell.outworld.core.module.Modules;
 import io.github.theskyfell.outworld.core.module.OutworldModule;
 import io.github.theskyfell.outworld.core.module.Transfers;
 import io.github.theskyfell.outworld.core.network.Payloads;
 import io.github.theskyfell.outworld.core.registry.Registrar;
 import java.util.List;
+import net.minecraft.core.Registry;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
@@ -18,6 +22,7 @@ import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.registration.PayloadRegistrar;
+import net.neoforged.neoforge.registries.NewDatapackRegistryEvent;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
 /**
@@ -51,9 +56,19 @@ public final class NeoForgeModules {
             }
         });
 
+        modBus.addListener(NewDatapackRegistryEvent.class, event -> module.registerDataRegistries(new EventDataRegistries(event)));
+
         modBus.addListener(RegisterCapabilitiesEvent.class, event -> module.registerTransfers(new CapabilityTransfers(event)));
 
         module.init();
+    }
+
+    /** Declares data pack registries through NeoForge's registry event. */
+    private record EventDataRegistries(NewDatapackRegistryEvent event) implements DataRegistries {
+        @Override
+        public <T> void synced(ResourceKey<Registry<T>> key, Codec<T> codec) {
+            event.worldRegistry(key, codec, codec);
+        }
     }
 
     /** Exposes Outworld storages as NeoForge capabilities. */
