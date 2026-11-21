@@ -63,6 +63,13 @@
 # - the assembler: one at 10 136 1 set to the stick recipe turns 4 oak planks into 8 sticks; one at
 #   13 136 1 set to the torch recipe takes sticks and coal from a hopper above it, but not the dirt in
 #   the same hopper, and makes 8 torches
+# - the M1 gate, ore to rocket fuel running on its own: a small factory at y 140-142 is built in one go
+#   and then left alone. Six combustion generators burning a coal each power it through a floor of cables.
+#   Inserters and belts carry 2 raw iron from a chest through a crusher, an ore washer (water piped from
+#   a cauldron) and an electric furnace, all three with speed and efficiency upgrades, to an assembler
+#   making buckets, and the buckets into a chest at 15 141 1. Beside it, water from a cauldron goes into
+#   an electrolyzer, and its hydrogen and oxygen through gas pipes into two gas liquefiers, which fill
+#   a liquid hydrogen tank at 9 141 8 and a liquid oxygen tank at 1 141 8
 # - the stress test runs: 500 test machines working nonstop, each on a creative battery, built at
 #   64 100 64. Under load Outworld must stay within its 5 ms per tick budget with all 500 machines
 #   awake; once quieted, every machine sleeps and Outworld costs (next to) nothing. The report is kept
@@ -193,6 +200,10 @@ assembler_sticks=""
 assembler_torches=""
 assembler_hopper=""
 assembler_state=""
+gate_buckets=""
+gate_lh2=""
+gate_lox=""
+gate_state=""
 belts_stress_start=""
 belts_stress_status=""
 gas_bottom=""
@@ -498,6 +509,51 @@ if [[ "$result" == "done" ]]; then
     assembler_hopper="$(rcon data get block 13 137 1 Items 2>&1 | cut -c1-300 || true)"
     assembler_state="sticks: $(rcon data get block 10 136 1 2>&1 | cut -c1-400 || true) | torches: $(rcon data get block 13 136 1 2>&1 | cut -c1-400 || true)"
 
+    # The M1 gate: ore to rocket fuel, built in one go and then left alone.
+    upgraded='upgrades:[{slot:0,item:{id:"outworld_industry:speed_upgrade",count:8}},{slot:1,item:{id:"outworld_industry:efficiency_upgrade",count:8}}]'
+    rcon fill 0 140 0 15 140 12 outworld_industry:cable > /dev/null 2>&1 || true
+    # Power: six generators with a coal each (192,000 FE; the factory uses about 40,000), and two
+    # batteries to hold what they make. They burn out within a minute, so the stress tests that follow
+    # find the factory asleep.
+    rcon fill 0 141 12 5 141 12 'outworld_industry:combustion_generator{Items:[{Slot:0b,id:"minecraft:coal",count:1}]}' > /dev/null 2>&1 || true
+    rcon fill 6 141 12 7 141 12 outworld_industry:battery > /dev/null 2>&1 || true
+    # Ore line along z 1, flowing east.
+    rcon setblock 9 139 0 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 9 140 0 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 9 141 0 outworld_industry:fluid_pipe > /dev/null 2>&1 || true
+    rcon setblock 1 141 1 'minecraft:chest{Items:[{Slot:0b,id:"minecraft:raw_iron",count:2}]}' > /dev/null 2>&1 || true
+    rcon setblock 15 141 1 minecraft:chest > /dev/null 2>&1 || true
+    rcon fill 3 141 1 5 141 1 'outworld_industry:belt[facing=east]' > /dev/null 2>&1 || true
+    rcon setblock 7 141 1 "outworld_industry:crusher{${upgraded}}" > /dev/null 2>&1 || true
+    rcon setblock 9 141 1 "outworld_industry:ore_washer{${upgraded}}" > /dev/null 2>&1 || true
+    rcon setblock 11 141 1 "outworld_industry:electric_furnace{${upgraded}}" > /dev/null 2>&1 || true
+    rcon setblock 13 141 1 'outworld_industry:assembler{recipe:"minecraft:bucket"}' > /dev/null 2>&1 || true
+    for x in 2 6 8 10 12 14; do
+        rcon setblock "$x" 141 1 'outworld_industry:inserter[facing=east]' > /dev/null 2>&1 || true
+    done
+    # Fuel line along z 8: the electrolyzer faces north, so hydrogen leaves east and oxygen west.
+    rcon setblock 5 139 8 'minecraft:water_cauldron[level=3]' > /dev/null 2>&1 || true
+    rcon setblock 5 140 8 outworld_industry:test_tank > /dev/null 2>&1 || true
+    rcon setblock 5 141 9 outworld_industry:cable > /dev/null 2>&1 || true
+    rcon setblock 6 141 8 outworld_industry:gas_pipe > /dev/null 2>&1 || true
+    rcon setblock 7 141 8 outworld_industry:gas_liquefier > /dev/null 2>&1 || true
+    rcon setblock 8 141 8 outworld_industry:fluid_pipe > /dev/null 2>&1 || true
+    rcon setblock 9 141 8 outworld_industry:fluid_tank > /dev/null 2>&1 || true
+    rcon setblock 4 141 8 outworld_industry:gas_pipe > /dev/null 2>&1 || true
+    rcon setblock 3 141 8 outworld_industry:gas_liquefier > /dev/null 2>&1 || true
+    rcon setblock 2 141 8 outworld_industry:fluid_pipe > /dev/null 2>&1 || true
+    rcon setblock 1 141 8 outworld_industry:fluid_tank > /dev/null 2>&1 || true
+    rcon setblock 5 141 8 'outworld_industry:electrolyzer[facing=north]' > /dev/null 2>&1 || true
+    for _ in $(seq 1 120); do
+        sleep 1
+        gate_buckets="$(rcon data get block 15 141 1 'Items[{id:"minecraft:bucket"}].count' 2>&1 || true)"
+        gate_lh2="$(rcon outworld grid 9 141 8 2>&1 || true)"
+        gate_lox="$(rcon outworld grid 1 141 8 2>&1 || true)"
+        [[ "$gate_buckets" =~ :\ 2$ && "$gate_lh2" =~ outworld_industry:liquid_hydrogen\ [1-9] \
+            && "$gate_lox" =~ outworld_industry:liquid_oxygen\ [1-9] ]] && break
+    done
+    gate_state="power: $(rcon outworld grid 6 141 12 2>&1 || true) | crusher: $(rcon data get block 7 141 1 Items 2>&1 | cut -c1-200 || true) | washer: $(rcon data get block 9 141 1 Items 2>&1 | cut -c1-200 || true) | furnace: $(rcon data get block 11 141 1 Items 2>&1 | cut -c1-200 || true) | assembler: $(rcon data get block 13 141 1 Items 2>&1 | cut -c1-200 || true) | electrolyzer: $(rcon data get block 5 141 8 2>&1 | cut -c1-300 || true)"
+
     # Stress test: about 55 seconds of warm-up, load, settling and idle.
     stress_start="$(rcon outworld stress start machines 500 64 100 64 2>&1 || true)"
     for _ in $(seq 1 50); do
@@ -759,6 +815,11 @@ if [[ "$assembler_torches" == *"minecraft:torch"* && "$assembler_torches" == *"c
     pass "the assembler made 8 torches from a hopper's sticks and coal, and left its dirt"
 else
     fail "8 torches from an assembler fed sticks and coal by a hopper, with the dirt left in the hopper (slot: ${assembler_torches:-none}; hopper: ${assembler_hopper:-none}; ${assembler_state:-none})"
+fi
+if [[ "$gate_buckets" =~ :\ 2$ && "$gate_lh2" =~ outworld_industry:liquid_hydrogen\ [1-9] && "$gate_lox" =~ outworld_industry:liquid_oxygen\ [1-9] ]]; then
+    pass "M1 gate: left alone, the factory turned 2 raw iron into 2 buckets and water into liquid hydrogen and oxygen"
+else
+    fail "M1 gate: 2 buckets in the chest at 15 141 1 and liquid hydrogen and oxygen in the tanks, from a factory left alone (buckets: ${gate_buckets:-none}; hydrogen tank: ${gate_lh2:-none}; oxygen tank: ${gate_lox:-none}; ${gate_state:-none})"
 fi
 if [[ "$efficiency_output" == *"crushed_iron"* && "$efficiency_output" == *"count: 4"* && "$efficiency_energy" =~ :\ 400L$ ]]; then
     pass "efficiency upgrades crushed 2 raw iron on 2,000 FE and left 400 FE"
