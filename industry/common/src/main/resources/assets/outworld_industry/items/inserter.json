@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "outworld_industry:block/inserter"
+    "model": "outworld_industry:item/inserter"
   }
 }
