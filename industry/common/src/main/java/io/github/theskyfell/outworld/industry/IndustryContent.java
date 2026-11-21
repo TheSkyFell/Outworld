@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.industry;
 
 import io.github.theskyfell.outworld.core.fluid.OutworldFluid;
+import io.github.theskyfell.outworld.core.machine.MachineMenu;
 import io.github.theskyfell.outworld.core.machine.MachineUpgrade;
 import io.github.theskyfell.outworld.core.machine.MachineUpgrades;
 import io.github.theskyfell.outworld.core.menu.Menus;
@@ -13,6 +14,9 @@ import io.github.theskyfell.outworld.industry.logistics.BeltBlockEntity;
 import io.github.theskyfell.outworld.industry.logistics.InserterBlock;
 import io.github.theskyfell.outworld.industry.logistics.InserterBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.ArcFurnaceBlock;
+import io.github.theskyfell.outworld.industry.machine.AssemblerBlock;
+import io.github.theskyfell.outworld.industry.machine.AssemblerBlockEntity;
+import io.github.theskyfell.outworld.industry.machine.AssemblerMenu;
 import io.github.theskyfell.outworld.industry.machine.ArcFurnaceBlockEntity;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlock;
 import io.github.theskyfell.outworld.industry.machine.CrusherBlockEntity;
@@ -122,6 +126,15 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<ArcFurnaceBlockEntity>> ARC_FURNACE = BLOCK_ENTITIES.register("arc_furnace",
             key -> BlockEntityTypes.create(ArcFurnaceBlockEntity::new, ARC_FURNACE_BLOCK.get()));
+
+    public static final RegistryEntry<Block, AssemblerBlock> ASSEMBLER_BLOCK = BLOCKS.register("assembler",
+            key -> new AssemblerBlock(BlockBehaviour.Properties.of().setId(key).strength(3.5F).sound(SoundType.METAL).requiresCorrectToolForDrops()));
+
+    public static final RegistryEntry<Item, BlockItem> ASSEMBLER_ITEM = ITEMS.register("assembler",
+            key -> new BlockItem(ASSEMBLER_BLOCK.get(), new Item.Properties().setId(key).useBlockDescriptionPrefix()));
+
+    public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<AssemblerBlockEntity>> ASSEMBLER = BLOCK_ENTITIES.register("assembler",
+            key -> BlockEntityTypes.create(AssemblerBlockEntity::new, ASSEMBLER_BLOCK.get()));
 
     /** The arc furnace's walls. */
     public static final RegistryEntry<Block, Block> REFRACTORY_BRICKS = BLOCKS.register("refractory_bricks",
@@ -382,6 +395,10 @@ public final class IndustryContent {
 
     public static final RegistryEntry<BlockEntityType<?>, BlockEntityType<TestGasTankBlockEntity>> TEST_GAS_TANK = BLOCK_ENTITIES.register("test_gas_tank",
             key -> BlockEntityTypes.create(TestGasTankBlockEntity::new, TEST_GAS_TANK_BLOCK.get()));
+
+    /** The assembler's screen: a machine screen with a recipe list. */
+    public static final RegistryEntry<MenuType<?>, MenuType<AssemblerMenu>> ASSEMBLER_MENU = MENUS.register("assembler",
+            key -> Menus.createType(AssemblerMenu::new, MachineMenu.OpenData.STREAM_CODEC));
 
     public static final RegistryEntry<MenuType<?>, MenuType<TestMachineMenu>> TEST_MACHINE_MENU = MENUS.register("test_machine",
             key -> Menus.createType(TestMachineMenu::new, BlockPos.STREAM_CODEC));

@@ -1,6 +1,7 @@
 package io.github.theskyfell.outworld.core.client;
 
 import io.github.theskyfell.outworld.core.machine.MachineMenu;
+import io.github.theskyfell.outworld.core.machine.MachineUpgrades;
 import io.github.theskyfell.outworld.core.machine.MachineValues;
 import java.util.List;
 import java.util.Locale;
@@ -14,15 +15,18 @@ import net.minecraft.world.inventory.Slot;
 /**
  * The screen of every recipe machine: input slots on the left, an arrow showing progress, output
  * slots on the right, the energy bar on the far left, tank gauges on the far right and the upgrade
- * slots below them. Drawn from flat colours, so it needs no textures.
+ * slots below them. Drawn from flat colours, so it needs no textures. Machines with more to show
+ * extend it, widening it to the right.
  */
-public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
-    private static final int PANEL = 0xFFC6C6C6;
-    private static final int PANEL_LIGHT = 0xFFFFFFFF;
-    private static final int PANEL_DARK = 0xFF555555;
-    private static final int SLOT = 0xFF8B8B8B;
-    private static final int SLOT_DARK = 0xFF373737;
-    private static final int TEXT = 0xFF404040;
+public class MachineScreen<M extends MachineMenu> extends AbstractContainerScreen<M> {
+    protected static final int PANEL = 0xFFC6C6C6;
+    protected static final int PANEL_LIGHT = 0xFFFFFFFF;
+    protected static final int PANEL_DARK = 0xFF555555;
+    protected static final int SLOT = 0xFF8B8B8B;
+    protected static final int SLOT_DARK = 0xFF373737;
+    protected static final int TEXT = 0xFF404040;
+    /** The width of the machine's part of the screen; wider screens put their extras to the right of it. */
+    protected static final int MACHINE_WIDTH = 176;
     private static final int ENERGY = 0xFFD8402A;
     private static final int PROGRESS = 0xFF4CC2A0;
     private static final int GAUGE_BACK = 0xFF2B2B2B;
@@ -33,8 +37,12 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
     private static final int GAUGE_WIDTH = 10;
     private static final int TANK_RIGHT = 168;
 
-    public MachineScreen(MachineMenu menu, Inventory inventory, Component title) {
-        super(menu, inventory, title, 176, MachineMenu.HEIGHT);
+    public MachineScreen(M menu, Inventory inventory, Component title) {
+        this(menu, inventory, title, MACHINE_WIDTH);
+    }
+
+    protected MachineScreen(M menu, Inventory inventory, Component title, int width) {
+        super(menu, inventory, title, width, MachineMenu.HEIGHT);
     }
 
     /** Puts new readings on the open machine screen, if they are for it. */
@@ -98,12 +106,17 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
         graphics.text(font, playerInventoryTitle, 8, imageHeight - 94, TEXT, false);
         MachineValues values = menu.values();
         String energy = String.format(Locale.ROOT, "%,d / %,d FE", values.energy(), values.energyCapacity());
-        graphics.text(font, Component.literal(energy), MachineMenu.INPUT_X, MachineMenu.SLOT_Y + 22, TEXT, false);
-        Component upgrades = Component.translatable("container.outworld.upgrades");
-        graphics.text(font, upgrades, MachineMenu.UPGRADE_X - 4 - font.width(upgrades), MachineMenu.UPGRADE_Y + 5, TEXT, false);
-        // Hovering a gauge shows what it holds.
+        graphics.text(font, Component.literal(energy), MachineMenu.INPUT_X, MachineMenu.energyTextY(menu.itemInputs()), TEXT, false);
         int x = mouseX - leftPos;
         int y = mouseY - topPos;
+        // Hovering an empty upgrade slot says what goes there.
+        for (int i = 0; i < MachineUpgrades.SLOTS; i++) {
+            Slot slot = menu.slots.get(menu.upgradeSlot(i));
+            if (!slot.hasItem() && x >= slot.x && x < slot.x + 16 && y >= slot.y && y < slot.y + 16) {
+                hoverLine(graphics, Component.translatable("container.outworld.upgrades"));
+            }
+        }
+        // Hovering a gauge shows what it holds.
         if (y >= GAUGE_TOP && y < GAUGE_TOP + GAUGE_HEIGHT) {
             List<MachineValues.Tank> tanks = values.tanks();
             for (int i = 0; i < tanks.size(); i++) {
@@ -114,10 +127,15 @@ public final class MachineScreen extends AbstractContainerScreen<MachineMenu> {
                     Component contents = tank.contents().isEmpty() ? Component.literal("Empty")
                             : Component.translatableWithFallback((tank.gas() ? "gas." : "fluid.") + tank.contents().replace(':', '.'), tank.contents());
                     String amounts = String.format(Locale.ROOT, ": %,d / %,d mB", tank.amount(), tank.capacity());
-                    graphics.text(font, contents.copy().append(amounts), 70, imageHeight - 94, TEXT, false);
+                    hoverLine(graphics, contents.copy().append(amounts));
                 }
             }
         }
+    }
+
+    /** Shows a line about what the mouse is over, beside the inventory's title. Call from {@link #extractLabels}. */
+    protected void hoverLine(GuiGraphicsExtractor graphics, Component line) {
+        graphics.text(font, line, 70, imageHeight - 94, TEXT, false);
     }
 
     /** A vertical gauge, filled from the bottom. */

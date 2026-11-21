@@ -52,7 +52,7 @@ public abstract class RecipeMachineBlock extends MachineBlock {
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hit) {
         if (player instanceof ServerPlayer serverPlayer && level.getBlockEntity(pos) instanceof RecipeMachineBlockEntity machine) {
-            MachineMenu.open(serverPlayer, machine, getName());
+            machine.openMenu(serverPlayer, getName());
         }
         return InteractionResult.SUCCESS;
     }

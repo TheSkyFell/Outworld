@@ -25,6 +25,7 @@ import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.material.Fluids;
@@ -33,11 +34,17 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The menu behind every recipe machine's screen: its input, output and upgrade slots, the player's inventory,
  * and the energy, progress and tank readings ({@link MachineValues}), which the server sends only to a
- * player with the screen open and only when they change.
+ * player with the screen open and only when they change. Machines with more to show (the assembler's
+ * recipe list) extend it with a menu type and screen of their own.
  */
-public final class MachineMenu extends AbstractContainerMenu {
-    /** Where the first input slot and the first output slot go; slots run to the right. */
+public class MachineMenu extends AbstractContainerMenu {
+    /**
+     * Where the first input slot and the first output slot go; slots run to the right. More than three
+     * inputs go in rows of three from {@link #INPUT_TOP}.
+     */
     public static final int INPUT_X = 26;
+    public static final int INPUT_TOP = 17;
+    public static final int INPUT_COLUMNS = 3;
     public static final int OUTPUT_X = 116;
     public static final int SLOT_Y = 35;
     /** Where the first upgrade slot goes, at the bottom right of the machine's half of the screen. */
@@ -56,13 +63,14 @@ public final class MachineMenu extends AbstractContainerMenu {
                 ByteBufCodecs.VAR_INT, OpenData::itemOutputs,
                 OpenData::new);
 
-        static OpenData of(RecipeMachineBlockEntity machine) {
+        public static OpenData of(RecipeMachineBlockEntity machine) {
             return new OpenData(machine.getBlockPos(), machine.layout().itemInputs(), machine.layout().itemOutputs());
         }
     }
 
     private final BlockPos pos;
     private final int machineSlots;
+    private final int inputs;
     /** The first slot of the player's inventory: after the machine's slots and its upgrade slots. */
     private final int playerSlots;
     private final RecipeMachineBlockEntity machine;
@@ -71,19 +79,30 @@ public final class MachineMenu extends AbstractContainerMenu {
 
     /** On the client, from the data the server sent. */
     public MachineMenu(int containerId, Inventory inventory, OpenData data) {
-        this(containerId, inventory, data, new SimpleContainer(data.itemInputs() + data.itemOutputs()), new MachineUpgrades(), null);
+        this(CoreContent.MACHINE_MENU.get(), containerId, inventory, data, null);
     }
 
-    private MachineMenu(int containerId, Inventory inventory, OpenData data, Container container, MachineUpgrades upgrades,
-            RecipeMachineBlockEntity machine) {
-        super(CoreContent.MACHINE_MENU.get(), containerId);
+    /**
+     * For a menu type of its own: on the client {@code machine} is null and the slots are placeholders
+     * the server fills in; on the server they are the machine's.
+     */
+    protected MachineMenu(MenuType<?> type, int containerId, Inventory inventory, OpenData data, RecipeMachineBlockEntity machine) {
+        this(type, containerId, inventory, data,
+                machine != null ? machine.items() : new SimpleContainer(data.itemInputs() + data.itemOutputs()),
+                machine != null ? machine.upgrades() : new MachineUpgrades(), machine);
+    }
+
+    private MachineMenu(MenuType<?> type, int containerId, Inventory inventory, OpenData data, Container container,
+            MachineUpgrades upgrades, RecipeMachineBlockEntity machine) {
+        super(type, containerId);
         this.pos = data.pos();
         this.machineSlots = data.itemInputs() + data.itemOutputs();
+        this.inputs = data.itemInputs();
         this.playerSlots = machineSlots + MachineUpgrades.SLOTS;
         this.machine = machine;
         this.player = inventory.player;
         for (int i = 0; i < data.itemInputs(); i++) {
-            addSlot(new InputSlot(container, i, INPUT_X + i * 18, SLOT_Y));
+            addSlot(new InputSlot(container, i, inputX(i, data.itemInputs()), inputY(i, data.itemInputs())));
         }
         for (int i = 0; i < data.itemOutputs(); i++) {
             addSlot(new OutputSlot(container, data.itemInputs() + i, OUTPUT_X + i * 18, SLOT_Y));
@@ -105,8 +124,37 @@ public final class MachineMenu extends AbstractContainerMenu {
     public static void open(ServerPlayer player, RecipeMachineBlockEntity machine, Component title) {
         OpenData data = OpenData.of(machine);
         Menus.open(player, new SimpleMenuProvider(
-                (containerId, inventory, opener) -> new MachineMenu(containerId, inventory, data, machine.items(), machine.upgrades(), machine), title),
-                OpenData.STREAM_CODEC, data);
+                (containerId, inventory, opener) -> new MachineMenu(CoreContent.MACHINE_MENU.get(), containerId, inventory, data, machine),
+                title), OpenData.STREAM_CODEC, data);
+    }
+
+    /** Where input slot {@code index} of {@code count} goes: one row, or rows of three for more than three. */
+    public static int inputX(int index, int count) {
+        return count <= INPUT_COLUMNS ? INPUT_X + index * 18 : INPUT_X + index % INPUT_COLUMNS * 18;
+    }
+
+    public static int inputY(int index, int count) {
+        return count <= INPUT_COLUMNS ? SLOT_Y : INPUT_TOP + index / INPUT_COLUMNS * 18;
+    }
+
+    /** Where the energy reading goes: under the input slots. */
+    public static int energyTextY(int inputs) {
+        return (inputs <= INPUT_COLUMNS ? SLOT_Y : inputY(inputs - 1, inputs)) + 22;
+    }
+
+    /** The machine, on the server; null on the client. */
+    protected RecipeMachineBlockEntity machine() {
+        return machine;
+    }
+
+    /** The menu slot index of upgrade slot {@code index}. */
+    public int upgradeSlot(int index) {
+        return machineSlots + index;
+    }
+
+    /** How many input slots the machine has. */
+    public int itemInputs() {
+        return inputs;
     }
 
     public BlockPos pos() {
